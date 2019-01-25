@@ -3,6 +3,7 @@ package com.example.resilience.connector;
 import com.example.resilience.connector.command.ICommand;
 import com.example.resilience.connector.configuration.EndpointConfiguration;
 import com.example.resilience.connector.model.Result;
+import com.example.resilience.connector.testcommands.NTriesToSucceedCommand;
 import com.example.resilience.connector.testcommands.TestCommandException;
 import com.example.resilience.connector.testcommands.TestDelayedCommand;
 import com.example.resilience.connector.testcommands.TestErrorCommand;
@@ -108,6 +109,36 @@ public class ResilienceIntegrationTest
                     .assertNext(result -> assertException(result, TestCommandException.class))
                     .assertNext(result -> assertException(result, CircuitBreakerOpenException.class))
                     .assertNext(result -> assertException(result, CircuitBreakerOpenException.class))
+                    .verifyComplete();
+    }
+
+    @Test
+    public void shouldSucceedWithRetry()
+    {
+        ICommand<String> command = new NTriesToSucceedCommand(3);
+        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withRetries(2).build();
+
+        // act
+        Mono<String> resultMono = whenExecute(command, endpointConfiguration).map(Result::getResponse);
+
+        // assert
+        StepVerifier.create(resultMono)
+                    .expectNext(NTriesToSucceedCommand.SUCCESS_RESPONSE)
+                    .verifyComplete();
+    }
+
+    @Test
+    public void shouldFailWithNotEnoughRetry()
+    {
+        ICommand<String> command = new NTriesToSucceedCommand(3);
+        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withRetries(1).build();
+
+        // act
+        Mono<Result<String>> resultMono = whenExecute(command, endpointConfiguration);
+
+        // assert
+        StepVerifier.create(resultMono)
+                    .assertNext(result -> assertException(result, TestCommandException.class))
                     .verifyComplete();
     }
 
