@@ -1,9 +1,10 @@
-package com.example.resilience.connectior;
+package com.example.resilience.connector;
 
-import com.example.resilience.connectior.command.ICommand;
-import com.example.resilience.connectior.command.MonoCommandBuilder;
-import com.example.resilience.connectior.configuration.EndpointConfiguration;
-import com.example.resilience.connectior.configuration.RateLimitConfiguration;
+import com.example.resilience.connector.command.ICommand;
+import com.example.resilience.connector.command.MonoCommandBuilder;
+import com.example.resilience.connector.configuration.EndpointConfiguration;
+import com.example.resilience.connector.configuration.RateLimitConfiguration;
+import com.example.resilience.connector.model.Result;
 import io.github.resilience4j.bulkhead.Bulkhead;
 import io.github.resilience4j.bulkhead.BulkheadConfig;
 import io.github.resilience4j.bulkhead.BulkheadRegistry;
@@ -21,7 +22,7 @@ public class Connector
     private final BulkheadRegistry bulkheadRegistry;
     private final RateLimiterRegistry rateLimiterRegistry;
 
-    public Connector(CircuitBreakerRegistry circuitBreakerRegistry, BulkheadRegistry bulkheadRegistry,
+    Connector(CircuitBreakerRegistry circuitBreakerRegistry, BulkheadRegistry bulkheadRegistry,
             RateLimiterRegistry rateLimiterRegistry)
     {
         this.circuitBreakerRegistry = circuitBreakerRegistry;

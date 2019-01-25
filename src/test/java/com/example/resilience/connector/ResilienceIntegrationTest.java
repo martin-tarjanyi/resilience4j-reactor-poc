@@ -1,12 +1,11 @@
 package com.example.resilience.connector;
 
-import com.example.resilience.connectior.Connector;
-import com.example.resilience.connectior.Result;
-import com.example.resilience.connectior.command.ICommand;
+import com.example.resilience.connector.command.ICommand;
+import com.example.resilience.connector.configuration.EndpointConfiguration;
+import com.example.resilience.connector.model.Result;
 import com.example.resilience.connector.testcommands.TestCommandException;
 import com.example.resilience.connector.testcommands.TestDelayedCommand;
 import com.example.resilience.connector.testcommands.TestErrorCommand;
-import com.example.resilience.connectior.configuration.EndpointConfiguration;
 import io.github.resilience4j.bulkhead.BulkheadFullException;
 import io.github.resilience4j.bulkhead.BulkheadRegistry;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerOpenException;

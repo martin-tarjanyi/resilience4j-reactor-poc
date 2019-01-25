@@ -1,6 +1,6 @@
 package com.example.resilience.connector.testcommands;
 
-import com.example.resilience.connectior.command.ICommand;
+import com.example.resilience.connector.command.ICommand;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;

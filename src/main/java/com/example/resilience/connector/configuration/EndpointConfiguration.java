@@ -1,4 +1,4 @@
-package com.example.resilience.connectior.configuration;
+package com.example.resilience.connector.configuration;
 
 import java.time.Duration;
 

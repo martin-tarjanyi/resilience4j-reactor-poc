@@ -1,7 +1,7 @@
 package com.example.resilience.connector.builders;
 
-import com.example.resilience.connectior.configuration.EndpointConfiguration;
-import com.example.resilience.connectior.configuration.RateLimitConfiguration;
+import com.example.resilience.connector.configuration.EndpointConfiguration;
+import com.example.resilience.connector.configuration.RateLimitConfiguration;
 
 import java.time.Duration;
 

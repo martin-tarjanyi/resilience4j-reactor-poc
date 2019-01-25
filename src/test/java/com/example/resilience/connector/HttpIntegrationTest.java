@@ -1,11 +1,10 @@
 package com.example.resilience.connector;
 
-import com.example.resilience.connectior.Connector;
-import com.example.resilience.connectior.Result;
-import com.example.resilience.connectior.command.http.HttpCommand;
-import com.example.resilience.connectior.command.http.HttpCommandException;
-import com.example.resilience.connectior.command.ICommand;
-import com.example.resilience.connectior.configuration.EndpointConfiguration;
+import com.example.resilience.connector.command.ICommand;
+import com.example.resilience.connector.command.http.HttpCommand;
+import com.example.resilience.connector.command.http.HttpCommandException;
+import com.example.resilience.connector.configuration.EndpointConfiguration;
+import com.example.resilience.connector.model.Result;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import io.github.resilience4j.bulkhead.BulkheadRegistry;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;

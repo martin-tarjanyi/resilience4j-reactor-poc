@@ -1,6 +1,6 @@
-package com.example.resilience.connectior.command;
+package com.example.resilience.connector.command;
 
-import com.example.resilience.connectior.Result;
+import com.example.resilience.connector.model.Result;
 import io.github.resilience4j.bulkhead.Bulkhead;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.RateLimiter;
