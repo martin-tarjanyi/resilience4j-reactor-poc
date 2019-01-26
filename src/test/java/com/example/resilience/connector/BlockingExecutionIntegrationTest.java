@@ -3,7 +3,7 @@ package com.example.resilience.connector;
 import com.example.resilience.connector.command.ICommand;
 import com.example.resilience.connector.configuration.EndpointConfiguration;
 import com.example.resilience.connector.model.Result;
-import com.example.resilience.connector.testcommands.TestDelayedCommand;
+import com.example.resilience.connector.testcommands.DelayedTestCommand;
 import io.github.resilience4j.bulkhead.BulkheadRegistry;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
@@ -40,12 +40,12 @@ public class BlockingExecutionIntegrationTest
         Result<String> result = connector.executeBlocking(endpointConfiguration, command);
 
         // assert
-        assertThat(result).isEqualTo(Result.ofSuccess(TestDelayedCommand.RESPONSE));
+        assertThat(result).isEqualTo(Result.ofSuccess(DelayedTestCommand.RESPONSE));
     }
 
     private ICommand<String> givenSlowCommand(Duration duration)
     {
-        return new TestDelayedCommand(duration);
+        return new DelayedTestCommand(duration);
     }
 
     @Test
@@ -61,7 +61,7 @@ public class BlockingExecutionIntegrationTest
         // assert
         assertThat(results).hasSize(42)
                            .extracting(Result::getResponse)
-                           .allSatisfy(response -> assertThat(response).isEqualTo(TestDelayedCommand.RESPONSE));
+                           .allSatisfy(response -> assertThat(response).isEqualTo(DelayedTestCommand.RESPONSE));
     }
 
     private List<ICommand<String>> givenSlowCommands(int n, Duration duration)

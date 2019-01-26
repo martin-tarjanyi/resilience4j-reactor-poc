@@ -5,13 +5,13 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 
-public class TestDelayedCommand implements ICommand<String>
+public class DelayedTestCommand implements ICommand<String>
 {
     public static final String RESPONSE = "Sloooow....";
 
     private final Duration commandDuration;
 
-    public TestDelayedCommand(Duration commandDuration)
+    public DelayedTestCommand(Duration commandDuration)
     {
         this.commandDuration = commandDuration;
     }

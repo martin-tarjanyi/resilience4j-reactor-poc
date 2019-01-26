@@ -3,7 +3,7 @@ package com.example.resilience.connector.testcommands;
 import com.example.resilience.connector.command.ICommand;
 import reactor.core.publisher.Mono;
 
-public class TestErrorCommand implements ICommand<String>
+public class ErrorTestCommand implements ICommand<String>
 {
     @Override
     public Mono<String> execute()

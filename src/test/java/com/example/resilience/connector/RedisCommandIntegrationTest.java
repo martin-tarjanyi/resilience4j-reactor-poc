@@ -24,7 +24,7 @@ import reactor.test.StepVerifier;
 import static com.example.resilience.connector.builders.EndpointConfigurationBuilder.anEndpointConfiguration;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedisIntegrationTest
+public class RedisCommandIntegrationTest
 {
     private GenericContainer redis;
     private Connector connector;

@@ -3,10 +3,10 @@ package com.example.resilience.connector;
 import com.example.resilience.connector.command.ICommand;
 import com.example.resilience.connector.configuration.EndpointConfiguration;
 import com.example.resilience.connector.model.Result;
-import com.example.resilience.connector.testcommands.NTriesToSucceedCommand;
+import com.example.resilience.connector.testcommands.DelayedTestCommand;
+import com.example.resilience.connector.testcommands.ErrorTestCommand;
+import com.example.resilience.connector.testcommands.NTriesToSucceedTestCommand;
 import com.example.resilience.connector.testcommands.TestCommandException;
-import com.example.resilience.connector.testcommands.TestDelayedCommand;
-import com.example.resilience.connector.testcommands.TestErrorCommand;
 import io.github.resilience4j.bulkhead.BulkheadFullException;
 import io.github.resilience4j.bulkhead.BulkheadRegistry;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerOpenException;
@@ -50,7 +50,7 @@ public class ResilienceIntegrationTest
 
         // assert
         StepVerifier.create(result)
-                    .expectNext(TestDelayedCommand.RESPONSE)
+                    .expectNext(DelayedTestCommand.RESPONSE)
                     .verifyComplete();
     }
 
@@ -72,22 +72,9 @@ public class ResilienceIntegrationTest
                     .verifyComplete();
     }
 
-    @Test
-    public void shouldActivateBulkhead()
+    private ICommand<String> givenSlowCommand(Duration commandDuration)
     {
-        // arrange
-        List<ICommand<String>> commands = givenSlowCommands(3);
-        EndpointConfiguration endpointConfiguration = givenConfigurationWithBulkHead(2);
-
-        // act
-        Flux<Result<String>> results = connector.execute(endpointConfiguration, commands);
-
-        // assert
-        StepVerifier.create(results)
-                    .assertNext(result -> assertException(result, BulkheadFullException.class))
-                    .expectNext(Result.ofSuccess(TestDelayedCommand.RESPONSE))
-                    .expectNext(Result.ofSuccess(TestDelayedCommand.RESPONSE))
-                    .verifyComplete();
+        return new DelayedTestCommand(commandDuration);
     }
 
     @Test
@@ -113,9 +100,27 @@ public class ResilienceIntegrationTest
     }
 
     @Test
+    public void shouldActivateBulkhead()
+    {
+        // arrange
+        List<ICommand<String>> commands = givenSlowCommands(3);
+        EndpointConfiguration endpointConfiguration = givenConfigurationWithBulkHead(2);
+
+        // act
+        Flux<Result<String>> results = connector.execute(endpointConfiguration, commands);
+
+        // assert
+        StepVerifier.create(results)
+                    .assertNext(result -> assertException(result, BulkheadFullException.class))
+                    .expectNext(Result.ofSuccess(DelayedTestCommand.RESPONSE))
+                    .expectNext(Result.ofSuccess(DelayedTestCommand.RESPONSE))
+                    .verifyComplete();
+    }
+
+    @Test
     public void shouldSucceedWithRetry()
     {
-        ICommand<String> command = new NTriesToSucceedCommand(3);
+        ICommand<String> command = new NTriesToSucceedTestCommand(3);
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withRetries(2).build();
 
         // act
@@ -123,22 +128,7 @@ public class ResilienceIntegrationTest
 
         // assert
         StepVerifier.create(resultMono)
-                    .expectNext(NTriesToSucceedCommand.SUCCESS_RESPONSE)
-                    .verifyComplete();
-    }
-
-    @Test
-    public void shouldFailWithNotEnoughRetry()
-    {
-        ICommand<String> command = new NTriesToSucceedCommand(3);
-        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withRetries(1).build();
-
-        // act
-        Mono<Result<String>> resultMono = whenExecute(command, endpointConfiguration);
-
-        // assert
-        StepVerifier.create(resultMono)
-                    .assertNext(result -> assertException(result, TestCommandException.class))
+                    .expectNext(NTriesToSucceedTestCommand.SUCCESS_RESPONSE)
                     .verifyComplete();
     }
 
@@ -161,14 +151,24 @@ public class ResilienceIntegrationTest
                         .collect(toList());
     }
 
-    private ICommand<String> givenSlowCommand(Duration commandDuration)
+    @Test
+    public void shouldFailWithNotEnoughRetry()
     {
-        return new TestDelayedCommand(commandDuration);
+        ICommand<String> command = new NTriesToSucceedTestCommand(3);
+        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withRetries(1).build();
+
+        // act
+        Mono<Result<String>> resultMono = whenExecute(command, endpointConfiguration);
+
+        // assert
+        StepVerifier.create(resultMono)
+                    .assertNext(result -> assertException(result, TestCommandException.class))
+                    .verifyComplete();
     }
 
     private ICommand<String> givenErrorCommand()
     {
-        return new TestErrorCommand();
+        return new ErrorTestCommand();
     }
 
     private Mono<Result<String>> whenExecute(ICommand<String> command, EndpointConfiguration endpointConfiguration)

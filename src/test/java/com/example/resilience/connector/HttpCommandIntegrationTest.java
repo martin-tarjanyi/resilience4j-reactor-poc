@@ -22,7 +22,7 @@ import static com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder.r
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class HttpIntegrationTest
+public class HttpCommandIntegrationTest
 {
     private static final String HTTP_RESPONSE_BODY = "HTTP response body";
     private static final WebClient WEB_CLIENT = WebClient.create();
