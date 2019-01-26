@@ -7,7 +7,7 @@ import java.time.Duration;
 
 public class TestDelayedCommand implements ICommand<String>
 {
-    public static final String SLOW_RESPONSE = "Sloooow....";
+    public static final String RESPONSE = "Sloooow....";
 
     private final Duration commandDuration;
 
@@ -20,6 +20,6 @@ public class TestDelayedCommand implements ICommand<String>
     public Mono<String> execute()
     {
         return Mono.delay(commandDuration)
-                   .map(k -> SLOW_RESPONSE);
+                   .map(k -> RESPONSE);
     }
 }

@@ -66,16 +66,6 @@ public class RedisIntegrationTest
                     .verifyComplete();
     }
 
-    private ReactiveRedisTemplate<String, String> givenARedisTemplate(String host)
-    {
-        LettuceConnectionFactory reactiveRedisConnectionFactory = new LettuceConnectionFactory(
-                new RedisStandaloneConfiguration(host, redis.getMappedPort(6379)));
-
-        reactiveRedisConnectionFactory.afterPropertiesSet();
-
-        return new ReactiveStringRedisTemplate(reactiveRedisConnectionFactory);
-    }
-
     @Test
     public void shouldGetFromRedisCorrectly()
     {
@@ -110,5 +100,15 @@ public class RedisIntegrationTest
                     .assertNext(result -> assertThat(result.getThrowable()).isInstanceOf(
                             RedisConnectionFailureException.class))
                     .verifyComplete();
+    }
+
+    private ReactiveRedisTemplate<String, String> givenARedisTemplate(String host)
+    {
+        LettuceConnectionFactory reactiveRedisConnectionFactory = new LettuceConnectionFactory(
+                new RedisStandaloneConfiguration(host, redis.getMappedPort(6379)));
+
+        reactiveRedisConnectionFactory.afterPropertiesSet();
+
+        return new ReactiveStringRedisTemplate(reactiveRedisConnectionFactory);
     }
 }

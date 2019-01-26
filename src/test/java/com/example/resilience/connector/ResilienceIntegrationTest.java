@@ -50,7 +50,7 @@ public class ResilienceIntegrationTest
 
         // assert
         StepVerifier.create(result)
-                    .expectNext(TestDelayedCommand.SLOW_RESPONSE)
+                    .expectNext(TestDelayedCommand.RESPONSE)
                     .verifyComplete();
     }
 
@@ -76,18 +76,17 @@ public class ResilienceIntegrationTest
     public void shouldActivateBulkhead()
     {
         // arrange
-        List<ICommand<String>> httpCommands = givenSlowCommands(3);
+        List<ICommand<String>> commands = givenSlowCommands(3);
         EndpointConfiguration endpointConfiguration = givenConfigurationWithBulkHead(2);
 
         // act
-        Flux<Result<String>> results = Flux.fromIterable(httpCommands)
-                                           .flatMap(command -> whenExecute(command, endpointConfiguration));
+        Flux<Result<String>> results = connector.execute(endpointConfiguration, commands);
 
         // assert
         StepVerifier.create(results)
                     .assertNext(result -> assertException(result, BulkheadFullException.class))
-                    .expectNext(Result.ofSuccess(TestDelayedCommand.SLOW_RESPONSE))
-                    .expectNext(Result.ofSuccess(TestDelayedCommand.SLOW_RESPONSE))
+                    .expectNext(Result.ofSuccess(TestDelayedCommand.RESPONSE))
+                    .expectNext(Result.ofSuccess(TestDelayedCommand.RESPONSE))
                     .verifyComplete();
     }
 
@@ -95,11 +94,12 @@ public class ResilienceIntegrationTest
     public void shouldActivateCircuitBreaker()
     {
         // arrange
-        List<ICommand<String>> httpCommands = givenErrorCommands(5);
+        List<ICommand<String>> commands = givenErrorCommands(5);
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withCircuitBreakerBufferSize(3).build();
 
         // act
-        Flux<Result<String>> results = Flux.fromIterable(httpCommands)
+        // sequential execution with concatmap to have stable result
+        Flux<Result<String>> results = Flux.fromIterable(commands)
                                            .concatMap(command -> whenExecute(command, endpointConfiguration));
 
         // assert

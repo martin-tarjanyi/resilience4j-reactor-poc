@@ -14,7 +14,11 @@ import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.ratelimiter.RateLimiter;
 import io.github.resilience4j.ratelimiter.RateLimiterConfig;
 import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.Collection;
+import java.util.List;
 
 public class Connector
 {
@@ -28,6 +32,24 @@ public class Connector
         this.circuitBreakerRegistry = circuitBreakerRegistry;
         this.bulkheadRegistry = bulkheadRegistry;
         this.rateLimiterRegistry = rateLimiterRegistry;
+    }
+
+    public Result<String> executeBlocking(EndpointConfiguration configuration, ICommand<String> command)
+    {
+        return execute(configuration, command).block();
+    }
+
+    public List<Result<String>> executeBlocking(EndpointConfiguration configuration,
+            Collection<? extends ICommand<String>> commands)
+    {
+        return execute(configuration, commands).collectList().block();
+    }
+
+    public Flux<Result<String>> execute(EndpointConfiguration configuration,
+            Collection<? extends ICommand<String>> commands)
+    {
+        return Flux.fromIterable(commands)
+                   .flatMap(command -> execute(configuration, command), commands.size());
     }
 
     public Mono<Result<String>> execute(EndpointConfiguration configuration, ICommand<String> command)

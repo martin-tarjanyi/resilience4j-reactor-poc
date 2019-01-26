@@ -10,6 +10,7 @@ import io.github.resilience4j.reactor.ratelimiter.operator.RateLimiterOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
 
 import java.time.Duration;
 
@@ -87,10 +88,18 @@ public class MonoCommandBuilder<T>
 
         return mono.timeout(timeout)
                    .retry(retries)
-                   .doOnNext(r -> LOGGER.info(r.toString()))
                    .map(Result::ofSuccess)
                    .doOnError(this::handleError)
-                   .onErrorResume(throwable -> Mono.just(Result.ofError(throwable)));
+                   .onErrorResume(throwable -> Mono.just(Result.ofError(throwable)))
+                   .doOnNext(r -> LOGGER.info(r.toString()))
+                   .elapsed()
+                   .doOnNext(this::logDuration)
+                   .map(Tuple2::getT2);
+    }
+
+    private void logDuration(Tuple2<Long, Result<T>> objects)
+    {
+        LOGGER.info("Command duration: " + objects.getT1() + " milliseconds");
     }
 
     private void handleError(Throwable t)

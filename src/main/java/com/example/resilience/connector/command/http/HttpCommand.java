@@ -1,6 +1,7 @@
 package com.example.resilience.connector.command.http;
 
 import com.example.resilience.connector.command.ICommand;
+import org.springframework.http.HttpMethod;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -19,7 +20,7 @@ public class HttpCommand implements ICommand<String>
     @Override
     public Mono<String> execute()
     {
-        return webClient.get()
+        return webClient.method(HttpMethod.GET)
                         .uri(uri)
                         .exchange()
                         .flatMap(this::verify)
