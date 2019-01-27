@@ -6,9 +6,11 @@ import com.example.resilience.connector.model.Result;
 import com.example.resilience.connector.testcommands.BlockingErrorTestCommand;
 import com.example.resilience.connector.testcommands.BlockingTestCommand;
 import com.example.resilience.connector.testcommands.TestCommandException;
+import io.github.resilience4j.bulkhead.BulkheadFullException;
 import io.github.resilience4j.bulkhead.BulkheadRegistry;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
+import org.assertj.core.api.Condition;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import reactor.core.publisher.Flux;
@@ -42,7 +44,7 @@ public class BlockingCommandIntegrationTest
         ICommand<String> command = givenBlockingCommandWithSuccess(Duration.ofMillis(200));
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().build();
 
-        //act
+        // act
         Mono<String> monoResult = whenExecute(command, endpointConfiguration).map(Result::getResponse);
 
         // assert
@@ -68,7 +70,7 @@ public class BlockingCommandIntegrationTest
         List<ICommand<String>> commands = givenBlockingCommandsWithSuccess(65, Duration.ofMillis(200));
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withBulkhead(70).build();
 
-        //act
+        // act
         Flux<Result<String>> monoResult = connector.execute(endpointConfiguration, commands);
 
         // assert
@@ -94,7 +96,7 @@ public class BlockingCommandIntegrationTest
         ICommand<String> command = givenBlockingCommandWithError(Duration.ofMillis(200));
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().build();
 
-        //act
+        // act
         Mono<Result<String>> monoResult = whenExecute(command, endpointConfiguration);
 
         // assert
@@ -103,8 +105,52 @@ public class BlockingCommandIntegrationTest
                     .verifyComplete();
     }
 
+    @Test
+    public void shouldLimitConcurrencyByBulkhead()
+    {
+        // arrange
+        List<ICommand<String>> commands = givenBlockingCommandsWithSuccess(5, Duration.ofMillis(200));
+        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withBulkhead(2).build();
+
+        // act
+        Flux<Result<String>> monoResult = connector.execute(endpointConfiguration, commands);
+
+        // assert
+        StepVerifier.create(monoResult)
+                    .assertNext(result -> assertThat(result.getThrowable()).isInstanceOf(BulkheadFullException.class))
+                    .assertNext(result -> assertThat(result.getThrowable()).isInstanceOf(BulkheadFullException.class))
+                    .assertNext(result -> assertThat(result.getThrowable()).isInstanceOf(BulkheadFullException.class))
+                    .expectNext(Result.ofSuccess(BlockingTestCommand.RESPONSE))
+                    .expectNext(Result.ofSuccess(BlockingTestCommand.RESPONSE))
+                    .verifyComplete();
+    }
+
     private ICommand<String> givenBlockingCommandWithError(Duration duration)
     {
         return new BlockingErrorTestCommand(duration);
+    }
+
+    @Test
+    public void shouldLimitConcurrencyByBulkheadOnBlockingEndpoints()
+    {
+        // arrange
+        List<ICommand<String>> commands = givenBlockingCommandsWithSuccess(10, Duration.ofMillis(200));
+        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withBulkhead(6).build();
+
+        // act
+        List<Result<String>> blockingResults = connector.executeBlocking(endpointConfiguration, commands);
+
+        // assert
+        Condition<Result<String>> errorCondition = new Condition<>(
+                result -> BlockingTestCommand.RESPONSE.equals(result.getResponse()),
+                "Should be result with success response.");
+
+        Condition<Result<String>> successCondition = new Condition<>(
+                result -> result.getThrowable() instanceof BulkheadFullException,
+                "Should be result with bulkhead exception.");
+
+        assertThat(blockingResults).hasSize(10)
+                                   .haveExactly(6, errorCondition)
+                                   .haveExactly(4, successCondition);
     }
 }
