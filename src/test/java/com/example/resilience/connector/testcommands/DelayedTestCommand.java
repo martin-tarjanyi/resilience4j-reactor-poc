@@ -5,7 +5,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 
-public class DelayedTestCommand implements ICommand<String>
+public class DelayedTestCommand implements ICommand
 {
     public static final String RESPONSE = "Sloooow....";
 

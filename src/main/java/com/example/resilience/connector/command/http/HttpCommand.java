@@ -6,7 +6,7 @@ import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-public class HttpCommand implements ICommand<String>
+public class HttpCommand implements ICommand
 {
     private final WebClient webClient;
     private final String uri;

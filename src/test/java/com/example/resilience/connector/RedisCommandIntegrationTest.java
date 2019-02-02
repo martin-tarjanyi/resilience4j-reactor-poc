@@ -4,6 +4,7 @@ import com.example.resilience.connector.command.redis.RedisCommand;
 import com.example.resilience.connector.command.redis.RedisGetCommand;
 import com.example.resilience.connector.command.redis.RedisSetCommand;
 import com.example.resilience.connector.configuration.EndpointConfiguration;
+import com.example.resilience.connector.model.CacheKey;
 import com.example.resilience.connector.model.Result;
 import io.github.resilience4j.bulkhead.BulkheadRegistry;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
@@ -73,7 +74,7 @@ public class RedisCommandIntegrationTest
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().build();
         ReactiveRedisTemplate<String, String> reactiveStringRedisTemplate = givenARedisTemplate("localhost");
         reactiveStringRedisTemplate.opsForValue().set("key", "value").block();
-        RedisCommand redisSetCommand = new RedisGetCommand(reactiveStringRedisTemplate, "key");
+        RedisCommand redisSetCommand = new RedisGetCommand(reactiveStringRedisTemplate, CacheKey.valueOf("key"));
 
         // act
         Mono<String> monoResult = connector.execute(endpointConfiguration, redisSetCommand).map(Result::getResponse);

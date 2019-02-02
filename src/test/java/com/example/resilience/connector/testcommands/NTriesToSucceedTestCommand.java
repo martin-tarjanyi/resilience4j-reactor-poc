@@ -5,7 +5,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class NTriesToSucceedTestCommand implements ICommand<String>
+public class NTriesToSucceedTestCommand implements ICommand
 {
     public static final String SUCCESS_RESPONSE = "Success";
     private static final AtomicInteger atomicInteger = new AtomicInteger(1);

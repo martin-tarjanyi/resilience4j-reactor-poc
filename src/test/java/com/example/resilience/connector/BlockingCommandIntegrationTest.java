@@ -41,7 +41,7 @@ public class BlockingCommandIntegrationTest
     public void shouldReturnSuccessWhenBlockingCommandExecuted()
     {
         // arrange
-        ICommand<String> command = givenBlockingCommandWithSuccess(Duration.ofMillis(200));
+        ICommand command = givenBlockingCommandWithSuccess(Duration.ofMillis(200));
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().build();
 
         // act
@@ -53,12 +53,12 @@ public class BlockingCommandIntegrationTest
                     .verifyComplete();
     }
 
-    private ICommand<String> givenBlockingCommandWithSuccess(Duration duration)
+    private ICommand givenBlockingCommandWithSuccess(Duration duration)
     {
         return new BlockingTestCommand(duration);
     }
 
-    private Mono<Result<String>> whenExecute(ICommand<String> command, EndpointConfiguration endpointConfiguration)
+    private Mono<Result<String>> whenExecute(ICommand command, EndpointConfiguration endpointConfiguration)
     {
         return connector.execute(endpointConfiguration, command);
     }
@@ -67,14 +67,14 @@ public class BlockingCommandIntegrationTest
     public void shouldReturnSuccessForMultipleBlockingCommands()
     {
         // arrange
-        List<ICommand<String>> commands = givenBlockingCommandsWithSuccess(65, Duration.ofMillis(200));
+        List<ICommand> commands = givenBlockingCommandsWithSuccess(65, Duration.ofMillis(200));
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withBulkhead(70).build();
 
         // act
         Flux<Result<String>> monoResult = connector.execute(endpointConfiguration, commands);
 
         // assert
-        Result[] results = Collections.nCopies(65, Result.ofSuccess(BlockingTestCommand.RESPONSE))
+        Result[] results = Collections.nCopies(65, Result.ofResponse(BlockingTestCommand.RESPONSE))
                                       .toArray(new Result[0]);
 
         StepVerifier.create(monoResult)
@@ -82,7 +82,7 @@ public class BlockingCommandIntegrationTest
                     .verifyComplete();
     }
 
-    private List<ICommand<String>> givenBlockingCommandsWithSuccess(int n, Duration duration)
+    private List<ICommand> givenBlockingCommandsWithSuccess(int n, Duration duration)
     {
         return IntStream.rangeClosed(1, n)
                         .mapToObj(i -> givenBlockingCommandWithSuccess(duration))
@@ -93,7 +93,7 @@ public class BlockingCommandIntegrationTest
     public void shouldReturnAResultWithExceptionWhenBlockingCommandFails()
     {
         // arrange
-        ICommand<String> command = givenBlockingCommandWithError(Duration.ofMillis(200));
+        ICommand command = givenBlockingCommandWithError(Duration.ofMillis(200));
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().build();
 
         // act
@@ -105,11 +105,16 @@ public class BlockingCommandIntegrationTest
                     .verifyComplete();
     }
 
+    private ICommand givenBlockingCommandWithError(Duration duration)
+    {
+        return new BlockingErrorTestCommand(duration);
+    }
+
     @Test
     public void shouldLimitConcurrencyByBulkhead()
     {
         // arrange
-        List<ICommand<String>> commands = givenBlockingCommandsWithSuccess(5, Duration.ofMillis(200));
+        List<ICommand> commands = givenBlockingCommandsWithSuccess(5, Duration.ofMillis(200));
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withBulkhead(2).build();
 
         // act
@@ -120,21 +125,16 @@ public class BlockingCommandIntegrationTest
                     .assertNext(result -> assertThat(result.getThrowable()).isInstanceOf(BulkheadFullException.class))
                     .assertNext(result -> assertThat(result.getThrowable()).isInstanceOf(BulkheadFullException.class))
                     .assertNext(result -> assertThat(result.getThrowable()).isInstanceOf(BulkheadFullException.class))
-                    .expectNext(Result.ofSuccess(BlockingTestCommand.RESPONSE))
-                    .expectNext(Result.ofSuccess(BlockingTestCommand.RESPONSE))
+                    .expectNext(Result.ofResponse(BlockingTestCommand.RESPONSE))
+                    .expectNext(Result.ofResponse(BlockingTestCommand.RESPONSE))
                     .verifyComplete();
-    }
-
-    private ICommand<String> givenBlockingCommandWithError(Duration duration)
-    {
-        return new BlockingErrorTestCommand(duration);
     }
 
     @Test
     public void shouldLimitConcurrencyByBulkheadOnBlockingEndpoints()
     {
         // arrange
-        List<ICommand<String>> commands = givenBlockingCommandsWithSuccess(10, Duration.ofMillis(200));
+        List<ICommand> commands = givenBlockingCommandsWithSuccess(10, Duration.ofMillis(200));
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withBulkhead(6).build();
 
         // act

@@ -3,7 +3,7 @@ package com.example.resilience.connector.command;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-public abstract class BlockingCommand implements ICommand<String>
+public abstract class BlockingCommand implements ICommand
 {
     @Override
     public final Mono<String> execute()

@@ -58,7 +58,7 @@ public class HttpCommandIntegrationTest
     public void shouldExecuteSuccessfullyWhenHttpServerRespondsSuccessfully()
     {
         // arrange
-        ICommand<String> httpCommand = givenHttpCommand("http://localhost:6060/ok");
+        ICommand httpCommand = givenHttpCommand("http://localhost:6060/ok");
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().build();
 
         //act
@@ -70,11 +70,21 @@ public class HttpCommandIntegrationTest
                     .verifyComplete();
     }
 
+    private ICommand givenHttpCommand(String uri)
+    {
+        return new HttpCommand(WEB_CLIENT, uri);
+    }
+
+    private Mono<Result<String>> whenExecute(ICommand command, EndpointConfiguration endpointConfiguration)
+    {
+        return connector.execute(endpointConfiguration, command);
+    }
+
     @Test
     public void shouldReturnAResultWithExceptionWhenHttpServerRespondsWith500()
     {
         // arrange
-        ICommand<String> httpCommand = givenHttpCommand("http://localhost:6060/error");
+        ICommand httpCommand = givenHttpCommand("http://localhost:6060/error");
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().build();
 
         //act
@@ -84,15 +94,5 @@ public class HttpCommandIntegrationTest
         StepVerifier.create(monoResult)
                     .assertNext(result -> assertThat(result.getThrowable()).isInstanceOf(HttpCommandException.class))
                     .verifyComplete();
-    }
-
-    private ICommand<String> givenHttpCommand(String uri)
-    {
-        return new HttpCommand(WEB_CLIENT, uri);
-    }
-
-    private Mono<Result<String>> whenExecute(ICommand<String> command, EndpointConfiguration endpointConfiguration)
-    {
-        return connector.execute(endpointConfiguration, command);
     }
 }

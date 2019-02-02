@@ -4,7 +4,7 @@ import com.example.resilience.connector.command.ICommand;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import reactor.core.publisher.Mono;
 
-public abstract class RedisCommand implements ICommand<String>
+public abstract class RedisCommand implements ICommand
 {
     private final ReactiveRedisTemplate<String, String> redisTemplate;
 

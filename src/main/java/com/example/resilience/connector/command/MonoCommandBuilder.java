@@ -18,7 +18,7 @@ public class MonoCommandBuilder<T>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(MonoCommandBuilder.class);
 
-    private final ICommand<T> command;
+    private final ICommand command;
 
     private int retries = 0;
     private CircuitBreaker circuitBreaker;
@@ -26,12 +26,12 @@ public class MonoCommandBuilder<T>
     private RateLimiter rateLimiter;
     private Duration timeout;
 
-    private MonoCommandBuilder(ICommand<T> command)
+    private MonoCommandBuilder(ICommand command)
     {
         this.command = command;
     }
 
-    public static <T> MonoCommandBuilder<T> aBuilder(ICommand<T> command)
+    public static <T> MonoCommandBuilder<T> aBuilder(ICommand command)
     {
         return new MonoCommandBuilder<>(command);
     }
@@ -66,9 +66,9 @@ public class MonoCommandBuilder<T>
         return this;
     }
 
-    public Mono<Result<T>> build()
+    public Mono<Result<String>> build()
     {
-        Mono<T> mono = command.execute();
+        Mono<String> mono = command.execute();
 
         if (circuitBreaker != null)
         {
@@ -88,7 +88,7 @@ public class MonoCommandBuilder<T>
 
         return mono.timeout(timeout)
                    .retry(retries)
-                   .map(Result::ofSuccess)
+                   .map(Result::ofRawResponse)
                    .doOnError(this::handleError)
                    .onErrorResume(throwable -> Mono.just(Result.ofError(throwable)))
                    .doOnNext(r -> LOGGER.info(r.toString()))
@@ -97,7 +97,7 @@ public class MonoCommandBuilder<T>
                    .map(Tuple2::getT2);
     }
 
-    private void logDuration(Tuple2<Long, Result<T>> objects)
+    private void logDuration(Tuple2<Long, ? extends Result<?>> objects)
     {
         LOGGER.info("Command duration: " + objects.getT1() + " milliseconds");
     }

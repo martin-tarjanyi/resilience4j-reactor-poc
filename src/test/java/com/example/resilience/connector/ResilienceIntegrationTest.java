@@ -42,7 +42,7 @@ public class ResilienceIntegrationTest
     public void shouldExecuteSuccessfully()
     {
         // arrange
-        ICommand<String> httpCommand = givenSlowCommand(Duration.ofSeconds(1));
+        ICommand httpCommand = givenSlowCommand(Duration.ofSeconds(1));
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().build();
 
         //act
@@ -54,11 +54,21 @@ public class ResilienceIntegrationTest
                     .verifyComplete();
     }
 
+    private ICommand givenSlowCommand(Duration commandDuration)
+    {
+        return new DelayedTestCommand(commandDuration);
+    }
+
+    private Mono<Result<String>> whenExecute(ICommand command, EndpointConfiguration endpointConfiguration)
+    {
+        return connector.execute(endpointConfiguration, command);
+    }
+
     @Test
     public void shouldTimeout()
     {
         // arrange
-        ICommand<String> httpCommand = givenSlowCommand(Duration.ofSeconds(1));
+        ICommand httpCommand = givenSlowCommand(Duration.ofSeconds(1));
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration()
                 .withTimeout(Duration.ofMillis(500))
                 .build();
@@ -72,16 +82,11 @@ public class ResilienceIntegrationTest
                     .verifyComplete();
     }
 
-    private ICommand<String> givenSlowCommand(Duration commandDuration)
-    {
-        return new DelayedTestCommand(commandDuration);
-    }
-
     @Test
     public void shouldActivateCircuitBreaker()
     {
         // arrange
-        List<ICommand<String>> commands = givenErrorCommands(5);
+        List<ICommand> commands = givenErrorCommands(5);
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withCircuitBreakerBufferSize(3).build();
 
         // act
@@ -99,11 +104,28 @@ public class ResilienceIntegrationTest
                     .verifyComplete();
     }
 
+    private List<ICommand> givenErrorCommands(int numberOfCommands)
+    {
+        return IntStream.rangeClosed(1, numberOfCommands)
+                        .mapToObj(i -> givenErrorCommand())
+                        .collect(toList());
+    }
+
+    private EndpointConfiguration givenConfigurationWithBulkHead(int bulkhead)
+    {
+        return anEndpointConfiguration().withBulkhead(bulkhead).build();
+    }
+
+    private ICommand givenErrorCommand()
+    {
+        return new ErrorTestCommand();
+    }
+
     @Test
     public void shouldActivateBulkhead()
     {
         // arrange
-        List<ICommand<String>> commands = givenSlowCommands(3);
+        List<ICommand> commands = givenSlowCommands(3);
         EndpointConfiguration endpointConfiguration = givenConfigurationWithBulkHead(2);
 
         // act
@@ -112,15 +134,22 @@ public class ResilienceIntegrationTest
         // assert
         StepVerifier.create(results)
                     .assertNext(result -> assertException(result, BulkheadFullException.class))
-                    .expectNext(Result.ofSuccess(DelayedTestCommand.RESPONSE))
-                    .expectNext(Result.ofSuccess(DelayedTestCommand.RESPONSE))
+                    .expectNext(Result.ofResponse(DelayedTestCommand.RESPONSE))
+                    .expectNext(Result.ofResponse(DelayedTestCommand.RESPONSE))
                     .verifyComplete();
+    }
+
+    private List<ICommand> givenSlowCommands(int numberOfCommands)
+    {
+        return IntStream.rangeClosed(1, numberOfCommands)
+                        .mapToObj(i -> givenSlowCommand(Duration.ofSeconds(1)))
+                        .collect(toList());
     }
 
     @Test
     public void shouldSucceedWithRetry()
     {
-        ICommand<String> command = new NTriesToSucceedTestCommand(3);
+        ICommand command = new NTriesToSucceedTestCommand(3);
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withRetries(2).build();
 
         // act
@@ -132,29 +161,10 @@ public class ResilienceIntegrationTest
                     .verifyComplete();
     }
 
-    private EndpointConfiguration givenConfigurationWithBulkHead(int bulkhead)
-    {
-        return anEndpointConfiguration().withBulkhead(bulkhead).build();
-    }
-
-    private List<ICommand<String>> givenSlowCommands(int numberOfCommands)
-    {
-        return IntStream.rangeClosed(1, numberOfCommands)
-                        .mapToObj(i -> givenSlowCommand(Duration.ofSeconds(1)))
-                        .collect(toList());
-    }
-
-    private List<ICommand<String>> givenErrorCommands(int numberOfCommands)
-    {
-        return IntStream.rangeClosed(1, numberOfCommands)
-                        .mapToObj(i -> givenErrorCommand())
-                        .collect(toList());
-    }
-
     @Test
     public void shouldFailWithNotEnoughRetry()
     {
-        ICommand<String> command = new NTriesToSucceedTestCommand(3);
+        ICommand command = new NTriesToSucceedTestCommand(3);
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withRetries(1).build();
 
         // act
@@ -164,16 +174,6 @@ public class ResilienceIntegrationTest
         StepVerifier.create(resultMono)
                     .assertNext(result -> assertException(result, TestCommandException.class))
                     .verifyComplete();
-    }
-
-    private ICommand<String> givenErrorCommand()
-    {
-        return new ErrorTestCommand();
-    }
-
-    private Mono<Result<String>> whenExecute(ICommand<String> command, EndpointConfiguration endpointConfiguration)
-    {
-        return connector.execute(endpointConfiguration, command);
     }
 
     private void assertException(Result<String> result, Class<? extends Throwable> type)

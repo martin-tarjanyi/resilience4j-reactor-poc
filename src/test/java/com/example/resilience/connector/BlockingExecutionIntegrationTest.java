@@ -33,17 +33,17 @@ public class BlockingExecutionIntegrationTest
     public void shouldExecuteSingleBlockingCorrectly()
     {
         // arrange
-        ICommand<String> command = givenSlowCommand(Duration.ofSeconds(1));
+        ICommand command = givenSlowCommand(Duration.ofSeconds(1));
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().build();
 
         // act
         Result<String> result = connector.executeBlocking(endpointConfiguration, command);
 
         // assert
-        assertThat(result).isEqualTo(Result.ofSuccess(DelayedTestCommand.RESPONSE));
+        assertThat(result).isEqualTo(Result.ofResponse(DelayedTestCommand.RESPONSE));
     }
 
-    private ICommand<String> givenSlowCommand(Duration duration)
+    private ICommand givenSlowCommand(Duration duration)
     {
         return new DelayedTestCommand(duration);
     }
@@ -52,7 +52,7 @@ public class BlockingExecutionIntegrationTest
     public void shouldExecuteMultipleBlockingCorrectly()
     {
         // arrange
-        List<ICommand<String>> commands = givenSlowCommands(42, Duration.ofSeconds(1));
+        List<ICommand> commands = givenSlowCommands(42, Duration.ofSeconds(1));
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withBulkhead(50).build();
 
         // act
@@ -64,7 +64,7 @@ public class BlockingExecutionIntegrationTest
                            .allSatisfy(response -> assertThat(response).isEqualTo(DelayedTestCommand.RESPONSE));
     }
 
-    private List<ICommand<String>> givenSlowCommands(int n, Duration duration)
+    private List<ICommand> givenSlowCommands(int n, Duration duration)
     {
         return IntStream.rangeClosed(1, n).mapToObj(i -> givenSlowCommand(duration)).collect(Collectors.toList());
     }

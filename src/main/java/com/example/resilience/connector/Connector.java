@@ -34,25 +34,12 @@ public class Connector
         this.rateLimiterRegistry = rateLimiterRegistry;
     }
 
-    public Result<String> executeBlocking(EndpointConfiguration configuration, ICommand<String> command)
+    public Result<String> executeBlocking(EndpointConfiguration configuration, ICommand command)
     {
         return execute(configuration, command).block();
     }
 
-    public List<Result<String>> executeBlocking(EndpointConfiguration configuration,
-            Collection<? extends ICommand<String>> commands)
-    {
-        return execute(configuration, commands).collectList().block();
-    }
-
-    public Flux<Result<String>> execute(EndpointConfiguration configuration,
-            Collection<? extends ICommand<String>> commands)
-    {
-        return Flux.fromIterable(commands)
-                   .flatMap(command -> execute(configuration, command), commands.size());
-    }
-
-    public Mono<Result<String>> execute(EndpointConfiguration configuration, ICommand<String> command)
+    public Mono<Result<String>> execute(EndpointConfiguration configuration, ICommand command)
     {
         String endpointName = configuration.getName();
 
@@ -71,6 +58,19 @@ public class Connector
                                  .withRetries(configuration.getRetries())
                                  .withTimeout(configuration.getTimeout())
                                  .build();
+    }
+
+    public List<Result<String>> executeBlocking(EndpointConfiguration configuration,
+            Collection<? extends ICommand> commands)
+    {
+        return execute(configuration, commands).collectList().block();
+    }
+
+    public Flux<Result<String>> execute(EndpointConfiguration configuration,
+            Collection<? extends ICommand> commands)
+    {
+        return Flux.fromIterable(commands)
+                   .flatMap(command -> execute(configuration, command), commands.size());
     }
 
     private RateLimiter rateLimiter(String endpointName, RateLimitConfiguration configuration)

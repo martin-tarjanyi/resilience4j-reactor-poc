@@ -1,13 +1,14 @@
 package com.example.resilience.connector.command.redis;
 
+import com.example.resilience.connector.model.CacheKey;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import reactor.core.publisher.Mono;
 
 public class RedisGetCommand extends RedisCommand
 {
-    private final String cacheKey;
+    private final CacheKey cacheKey;
 
-    public RedisGetCommand(ReactiveRedisTemplate<String, String> redisTemplate, String cacheKey)
+    public RedisGetCommand(ReactiveRedisTemplate<String, String> redisTemplate, CacheKey cacheKey)
     {
         super(redisTemplate);
 
@@ -17,6 +18,6 @@ public class RedisGetCommand extends RedisCommand
     @Override
     protected Mono<String> execute(ReactiveRedisTemplate<String, String> redisTemplate)
     {
-        return redisTemplate.opsForValue().get(cacheKey);
+        return redisTemplate.opsForValue().get(cacheKey.getValue());
     }
 }
