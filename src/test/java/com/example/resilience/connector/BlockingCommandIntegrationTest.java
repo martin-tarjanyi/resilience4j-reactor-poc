@@ -2,6 +2,7 @@ package com.example.resilience.connector;
 
 import com.example.resilience.connector.command.ICommand;
 import com.example.resilience.connector.configuration.EndpointConfiguration;
+import com.example.resilience.connector.model.CommandDescriptor;
 import com.example.resilience.connector.model.Result;
 import com.example.resilience.connector.testcommands.BlockingErrorTestCommand;
 import com.example.resilience.connector.testcommands.BlockingTestCommand;
@@ -20,13 +21,14 @@ import reactor.test.StepVerifier;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Set;
 import java.util.stream.IntStream;
 
 import static com.example.resilience.connector.builders.EndpointConfigurationBuilder.anEndpointConfiguration;
+import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class BlockingCommandIntegrationTest
+public class BlockingCommandIntegrationTest extends BaseConnectorIntegrationTest
 {
     private Connector connector;
 
@@ -53,16 +55,6 @@ public class BlockingCommandIntegrationTest
                     .verifyComplete();
     }
 
-    private ICommand givenBlockingCommandWithSuccess(Duration duration)
-    {
-        return new BlockingTestCommand(duration);
-    }
-
-    private Mono<Result<String>> whenExecute(ICommand command, EndpointConfiguration endpointConfiguration)
-    {
-        return connector.execute(endpointConfiguration, command);
-    }
-
     @Test
     public void shouldReturnSuccessForMultipleBlockingCommands()
     {
@@ -70,8 +62,11 @@ public class BlockingCommandIntegrationTest
         List<ICommand> commands = givenBlockingCommandsWithSuccess(65, Duration.ofMillis(200));
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withBulkhead(70).build();
 
+        Set<CommandDescriptor<String>> commandDescriptors =
+                createDescriptors(commands, endpointConfiguration);
+
         // act
-        Flux<Result<String>> monoResult = connector.execute(endpointConfiguration, commands);
+        Flux<Result<String>> monoResult = connector.execute(commandDescriptors);
 
         // assert
         Result[] results = Collections.nCopies(65, Result.ofResponse(BlockingTestCommand.RESPONSE))
@@ -80,13 +75,6 @@ public class BlockingCommandIntegrationTest
         StepVerifier.create(monoResult)
                     .expectNext(results)
                     .verifyComplete();
-    }
-
-    private List<ICommand> givenBlockingCommandsWithSuccess(int n, Duration duration)
-    {
-        return IntStream.rangeClosed(1, n)
-                        .mapToObj(i -> givenBlockingCommandWithSuccess(duration))
-                        .collect(Collectors.toList());
     }
 
     @Test
@@ -105,9 +93,16 @@ public class BlockingCommandIntegrationTest
                     .verifyComplete();
     }
 
-    private ICommand givenBlockingCommandWithError(Duration duration)
+    private List<ICommand> givenBlockingCommandsWithSuccess(int n, Duration duration)
     {
-        return new BlockingErrorTestCommand(duration);
+        return IntStream.rangeClosed(1, n)
+                        .mapToObj(i -> givenBlockingCommandWithSuccess(duration))
+                        .collect(toList());
+    }
+
+    private ICommand givenBlockingCommandWithSuccess(Duration duration)
+    {
+        return new BlockingTestCommand(duration);
     }
 
     @Test
@@ -117,8 +112,11 @@ public class BlockingCommandIntegrationTest
         List<ICommand> commands = givenBlockingCommandsWithSuccess(5, Duration.ofMillis(200));
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withBulkhead(2).build();
 
+        Set<CommandDescriptor<String>> commandDescriptors =
+                createDescriptors(commands, endpointConfiguration);
+
         // act
-        Flux<Result<String>> monoResult = connector.execute(endpointConfiguration, commands);
+        Flux<Result<String>> monoResult = connector.execute(commandDescriptors);
 
         // assert
         StepVerifier.create(monoResult)
@@ -137,8 +135,10 @@ public class BlockingCommandIntegrationTest
         List<ICommand> commands = givenBlockingCommandsWithSuccess(10, Duration.ofMillis(200));
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withBulkhead(6).build();
 
+        Set<CommandDescriptor<String>> commandDescriptors = createDescriptors(commands, endpointConfiguration);
+
         // act
-        List<Result<String>> blockingResults = connector.executeBlocking(endpointConfiguration, commands);
+        List<Result<String>> blockingResults = connector.executeBlocking(commandDescriptors);
 
         // assert
         Condition<Result<String>> errorCondition = new Condition<>(
@@ -152,5 +152,16 @@ public class BlockingCommandIntegrationTest
         assertThat(blockingResults).hasSize(10)
                                    .haveExactly(6, errorCondition)
                                    .haveExactly(4, successCondition);
+    }
+
+    private ICommand givenBlockingCommandWithError(Duration duration)
+    {
+        return new BlockingErrorTestCommand(duration);
+    }
+
+    private Mono<Result<String>> whenExecute(ICommand command, EndpointConfiguration endpointConfiguration)
+    {
+        CommandDescriptor<String> commandDescriptor = createDescriptor(endpointConfiguration, command);
+        return connector.execute(commandDescriptor);
     }
 }

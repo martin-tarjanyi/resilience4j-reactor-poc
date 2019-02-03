@@ -1,9 +1,9 @@
 package com.example.resilience.connector;
 
-import com.example.resilience.connector.command.ICommand;
 import com.example.resilience.connector.command.MonoCommandBuilder;
 import com.example.resilience.connector.configuration.EndpointConfiguration;
 import com.example.resilience.connector.configuration.RateLimitConfiguration;
+import com.example.resilience.connector.model.CommandDescriptor;
 import com.example.resilience.connector.model.Result;
 import io.github.resilience4j.bulkhead.Bulkhead;
 import io.github.resilience4j.bulkhead.BulkheadConfig;
@@ -34,13 +34,14 @@ public class Connector
         this.rateLimiterRegistry = rateLimiterRegistry;
     }
 
-    public Result<String> executeBlocking(EndpointConfiguration configuration, ICommand command)
+    public <T> Result<T> executeBlocking(CommandDescriptor<T> commandDescriptor)
     {
-        return execute(configuration, command).block();
+        return execute(commandDescriptor).block();
     }
 
-    public Mono<Result<String>> execute(EndpointConfiguration configuration, ICommand command)
+    public <T> Mono<Result<T>> execute(CommandDescriptor<T> commandDescriptor)
     {
+        EndpointConfiguration configuration = commandDescriptor.getEndpointConfiguration();
         String endpointName = configuration.getName();
 
         CircuitBreaker circuitBreaker = circuitBreakerRegistry.circuitBreaker(endpointName,
@@ -51,26 +52,26 @@ public class Connector
         Bulkhead bulkhead = bulkheadRegistry.bulkhead(endpointName, BulkheadConfig.custom().maxConcurrentCalls(configuration.getBulkhead()).build());
         RateLimiter rateLimiter = rateLimiter(endpointName, configuration.getRateLimitConfiguration());
 
-        return MonoCommandBuilder.aBuilder(command)
-                                 .withCircuitBreaker(circuitBreaker)
-                                 .withBulkhead(bulkhead)
-                                 .withRateLimiter(rateLimiter)
-                                 .withRetries(configuration.getRetries())
-                                 .withTimeout(configuration.getTimeout())
-                                 .build();
+        return MonoCommandBuilder.<T>aBuilder(commandDescriptor.getCommand())
+                .withCircuitBreaker(circuitBreaker)
+                .withBulkhead(bulkhead)
+                .withRateLimiter(rateLimiter)
+                .withRetries(configuration.getRetries())
+                .withTimeout(configuration.getTimeout())
+                .withCachePort(configuration.getCachePort())
+                .withDeserializer(commandDescriptor.getDeserializer())
+                .build();
     }
 
-    public List<Result<String>> executeBlocking(EndpointConfiguration configuration,
-            Collection<? extends ICommand> commands)
+    public <T> List<Result<T>> executeBlocking(Collection<? extends CommandDescriptor<T>> commandDescriptors)
     {
-        return execute(configuration, commands).collectList().block();
+        return execute(commandDescriptors).collectList().block();
     }
 
-    public Flux<Result<String>> execute(EndpointConfiguration configuration,
-            Collection<? extends ICommand> commands)
+    public <T> Flux<Result<T>> execute(Collection<? extends CommandDescriptor<T>> commandDescriptors)
     {
-        return Flux.fromIterable(commands)
-                   .flatMap(command -> execute(configuration, command), commands.size());
+        return Flux.fromIterable(commandDescriptors)
+                   .flatMap(this::execute, commandDescriptors.size());
     }
 
     private RateLimiter rateLimiter(String endpointName, RateLimitConfiguration configuration)

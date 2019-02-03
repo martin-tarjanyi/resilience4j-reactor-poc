@@ -2,6 +2,7 @@ package com.example.resilience.connector;
 
 import com.example.resilience.connector.command.ICommand;
 import com.example.resilience.connector.configuration.EndpointConfiguration;
+import com.example.resilience.connector.model.CommandDescriptor;
 import com.example.resilience.connector.model.Result;
 import com.example.resilience.connector.testcommands.DelayedTestCommand;
 import io.github.resilience4j.bulkhead.BulkheadRegistry;
@@ -12,13 +13,14 @@ import org.testng.annotations.Test;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.example.resilience.connector.builders.EndpointConfigurationBuilder.anEndpointConfiguration;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class BlockingExecutionIntegrationTest
+public class BlockingExecutionIntegrationTest extends BaseConnectorIntegrationTest
 {
     private Connector connector;
 
@@ -35,9 +37,10 @@ public class BlockingExecutionIntegrationTest
         // arrange
         ICommand command = givenSlowCommand(Duration.ofSeconds(1));
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().build();
+        CommandDescriptor<String> descriptor = createDescriptor(endpointConfiguration, command);
 
         // act
-        Result<String> result = connector.executeBlocking(endpointConfiguration, command);
+        Result<String> result = connector.executeBlocking(descriptor);
 
         // assert
         assertThat(result).isEqualTo(Result.ofResponse(DelayedTestCommand.RESPONSE));
@@ -54,9 +57,10 @@ public class BlockingExecutionIntegrationTest
         // arrange
         List<ICommand> commands = givenSlowCommands(42, Duration.ofSeconds(1));
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withBulkhead(50).build();
+        Set<CommandDescriptor<String>> descriptors = createDescriptors(commands, endpointConfiguration);
 
         // act
-        List<Result<String>> results = connector.executeBlocking(endpointConfiguration, commands);
+        List<Result<String>> results = connector.executeBlocking(descriptors);
 
         // assert
         assertThat(results).hasSize(42)

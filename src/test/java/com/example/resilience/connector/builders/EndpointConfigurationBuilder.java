@@ -13,6 +13,7 @@ public final class EndpointConfigurationBuilder
     private Duration timeout = Duration.ofSeconds(5);
     private RateLimitConfiguration rateLimitConfiguration = new RateLimitConfiguration(false, Duration.ofSeconds(3), 3);
     private int circuitBreakerBufferSize = 10;
+    private int cachePort;
 
     private EndpointConfigurationBuilder()
     {
@@ -59,9 +60,15 @@ public final class EndpointConfigurationBuilder
         return this;
     }
 
+    public EndpointConfigurationBuilder withCachePort(int cachePort)
+    {
+        this.cachePort = cachePort;
+        return this;
+    }
+
     public EndpointConfiguration build()
     {
         return new EndpointConfiguration(name, bulkhead, retries, timeout, rateLimitConfiguration,
-                circuitBreakerBufferSize);
+                circuitBreakerBufferSize, cachePort);
     }
 }

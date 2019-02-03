@@ -30,9 +30,14 @@ public class Result<T>
         return new Result<>(response, null, null, false);
     }
 
-    public static Result<String> ofRawResponse(String rawResponse)
+    public static <T> Result<T> ofRawResponse(String rawResponse)
     {
-        return new Result<>(rawResponse, null, null, false);
+        return new Result<>(null, rawResponse, null, false);
+    }
+
+    public static <T> Result<T> markAsRawResponseFromCache(Result<String> cacheResult)
+    {
+        return new Result<>(null, cacheResult.getResponse(), cacheResult.getThrowable(), true);
     }
 
     public T getResponse()
@@ -55,9 +60,9 @@ public class Result<T>
         return fromCache;
     }
 
-    public Result<T> markAsFromCache()
+    public <U> Result<U> markAsFromCache()
     {
-        return new Result<>(this.response, this.rawResponse, this.throwable, true);
+        return new Result<>(null, this.rawResponse, this.throwable, true);
     }
 
     public <U> Result<U> addDeserializedResponse(U response)

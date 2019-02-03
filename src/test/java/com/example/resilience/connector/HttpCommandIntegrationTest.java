@@ -4,15 +4,13 @@ import com.example.resilience.connector.command.ICommand;
 import com.example.resilience.connector.command.http.HttpCommand;
 import com.example.resilience.connector.command.http.HttpCommandException;
 import com.example.resilience.connector.configuration.EndpointConfiguration;
+import com.example.resilience.connector.model.CommandDescriptor;
+import com.example.resilience.connector.model.CommandDescriptorBuilder;
 import com.example.resilience.connector.model.Result;
 import com.github.tomakehurst.wiremock.WireMockServer;
-import io.github.resilience4j.bulkhead.BulkheadRegistry;
-import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
-import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -22,16 +20,15 @@ import static com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder.r
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class HttpCommandIntegrationTest
+public class HttpCommandIntegrationTest extends BaseConnectorIntegrationTest
 {
     private static final String HTTP_RESPONSE_BODY = "HTTP response body";
     private static final WebClient WEB_CLIENT = WebClient.create();
 
-    private Connector connector;
     private WireMockServer wireMockServer;
 
     @BeforeClass
-    public void setUp()
+    public void beforeClass()
     {
         wireMockServer = new WireMockServer(6060);
 
@@ -47,19 +44,13 @@ public class HttpCommandIntegrationTest
         wireMockServer.stop();
     }
 
-    @BeforeMethod
-    public void beforeMethod()
-    {
-        connector = new Connector(CircuitBreakerRegistry.ofDefaults(), BulkheadRegistry.ofDefaults(),
-                RateLimiterRegistry.ofDefaults());
-    }
-
     @Test
     public void shouldExecuteSuccessfullyWhenHttpServerRespondsSuccessfully()
     {
         // arrange
         ICommand httpCommand = givenHttpCommand("http://localhost:6060/ok");
-        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().build();
+        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withCachePort(redis.getMappedPort(6379))
+                                                                               .build();
 
         //act
         Mono<String> result = whenExecute(httpCommand, endpointConfiguration).map(Result::getResponse);
@@ -77,7 +68,13 @@ public class HttpCommandIntegrationTest
 
     private Mono<Result<String>> whenExecute(ICommand command, EndpointConfiguration endpointConfiguration)
     {
-        return connector.execute(endpointConfiguration, command);
+        CommandDescriptor<String> commandDescriptor = CommandDescriptorBuilder.aCommandDescriptorWithStringResult()
+                                                                              .withCommand(command)
+                                                                              .withEndpointConfiguration(
+                                                                                      endpointConfiguration)
+                                                                              .build();
+
+        return connector.execute(commandDescriptor);
     }
 
     @Test
@@ -85,7 +82,8 @@ public class HttpCommandIntegrationTest
     {
         // arrange
         ICommand httpCommand = givenHttpCommand("http://localhost:6060/error");
-        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().build();
+        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withCachePort(redis.getMappedPort(6379))
+                                                                               .build();
 
         //act
         Mono<Result<String>> monoResult = whenExecute(httpCommand, endpointConfiguration);

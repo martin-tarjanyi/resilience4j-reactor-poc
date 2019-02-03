@@ -2,17 +2,14 @@ package com.example.resilience.connector;
 
 import com.example.resilience.connector.command.ICommand;
 import com.example.resilience.connector.configuration.EndpointConfiguration;
+import com.example.resilience.connector.model.CommandDescriptor;
 import com.example.resilience.connector.model.Result;
 import com.example.resilience.connector.testcommands.DelayedTestCommand;
 import com.example.resilience.connector.testcommands.ErrorTestCommand;
 import com.example.resilience.connector.testcommands.NTriesToSucceedTestCommand;
 import com.example.resilience.connector.testcommands.TestCommandException;
 import io.github.resilience4j.bulkhead.BulkheadFullException;
-import io.github.resilience4j.bulkhead.BulkheadRegistry;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerOpenException;
-import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
-import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -20,6 +17,7 @@ import reactor.test.StepVerifier;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.IntStream;
 
@@ -27,26 +25,18 @@ import static com.example.resilience.connector.builders.EndpointConfigurationBui
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ResilienceIntegrationTest
+public class ResilienceIntegrationTest extends BaseConnectorIntegrationTest
 {
-    private Connector connector;
-
-    @BeforeMethod
-    public void beforeMethod()
-    {
-        connector = new Connector(CircuitBreakerRegistry.ofDefaults(), BulkheadRegistry.ofDefaults(),
-                RateLimiterRegistry.ofDefaults());
-    }
-
     @Test
     public void shouldExecuteSuccessfully()
     {
         // arrange
-        ICommand httpCommand = givenSlowCommand(Duration.ofSeconds(1));
+        ICommand command = givenSlowCommand(Duration.ofSeconds(1));
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().build();
+        CommandDescriptor<String> descriptor = createDescriptor(endpointConfiguration, command);
 
         //act
-        Mono<String> result = whenExecute(httpCommand, endpointConfiguration).map(Result::getResponse);
+        Mono<String> result = whenExecuteConnectorAndExtractResponse(descriptor);
 
         // assert
         StepVerifier.create(result)
@@ -59,22 +49,18 @@ public class ResilienceIntegrationTest
         return new DelayedTestCommand(commandDuration);
     }
 
-    private Mono<Result<String>> whenExecute(ICommand command, EndpointConfiguration endpointConfiguration)
-    {
-        return connector.execute(endpointConfiguration, command);
-    }
-
     @Test
     public void shouldTimeout()
     {
         // arrange
-        ICommand httpCommand = givenSlowCommand(Duration.ofSeconds(1));
+        ICommand command = givenSlowCommand(Duration.ofSeconds(1));
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration()
                 .withTimeout(Duration.ofMillis(500))
                 .build();
+        CommandDescriptor<String> descriptor = createDescriptor(endpointConfiguration, command);
 
-        // act
-        Mono<Result<String>> monoResult = whenExecute(httpCommand, endpointConfiguration);
+        //act
+        Mono<Result<String>> monoResult = whenExecuteConnector(descriptor);
 
         // assert
         StepVerifier.create(monoResult)
@@ -92,7 +78,8 @@ public class ResilienceIntegrationTest
         // act
         // sequential execution with concatmap to have stable result
         Flux<Result<String>> results = Flux.fromIterable(commands)
-                                           .concatMap(command -> whenExecute(command, endpointConfiguration));
+                                           .map(command -> createDescriptor(endpointConfiguration, command))
+                                           .concatMap(this::whenExecuteConnector);
 
         // assert
         StepVerifier.create(results)
@@ -127,9 +114,10 @@ public class ResilienceIntegrationTest
         // arrange
         List<ICommand> commands = givenSlowCommands(3);
         EndpointConfiguration endpointConfiguration = givenConfigurationWithBulkHead(2);
+        Set<CommandDescriptor<String>> descriptors = createDescriptors(commands, endpointConfiguration);
 
         // act
-        Flux<Result<String>> results = connector.execute(endpointConfiguration, commands);
+        Flux<Result<String>> results = connector.execute(descriptors);
 
         // assert
         StepVerifier.create(results)
@@ -151,9 +139,10 @@ public class ResilienceIntegrationTest
     {
         ICommand command = new NTriesToSucceedTestCommand(3);
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withRetries(2).build();
+        CommandDescriptor<String> descriptor = createDescriptor(endpointConfiguration, command);
 
-        // act
-        Mono<String> resultMono = whenExecute(command, endpointConfiguration).map(Result::getResponse);
+        //act
+        Mono<String> resultMono = whenExecuteConnectorAndExtractResponse(descriptor);
 
         // assert
         StepVerifier.create(resultMono)
@@ -166,9 +155,10 @@ public class ResilienceIntegrationTest
     {
         ICommand command = new NTriesToSucceedTestCommand(3);
         EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withRetries(1).build();
+        CommandDescriptor<String> descriptor = createDescriptor(endpointConfiguration, command);
 
-        // act
-        Mono<Result<String>> resultMono = whenExecute(command, endpointConfiguration);
+        //act
+        Mono<Result<String>> resultMono = whenExecuteConnector(descriptor);
 
         // assert
         StepVerifier.create(resultMono)

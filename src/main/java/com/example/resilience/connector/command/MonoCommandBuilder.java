@@ -1,6 +1,9 @@
 package com.example.resilience.connector.command;
 
+import com.example.resilience.connector.command.decorator.CacheDecorator;
+import com.example.resilience.connector.model.CacheKey;
 import com.example.resilience.connector.model.Result;
+import com.example.resilience.connector.serialization.Deserializer;
 import io.github.resilience4j.bulkhead.Bulkhead;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.RateLimiter;
@@ -25,6 +28,9 @@ public class MonoCommandBuilder<T>
     private Bulkhead bulkhead;
     private RateLimiter rateLimiter;
     private Duration timeout;
+    private int cachePort;
+    private boolean cacheEnabled = false;
+    private Deserializer<T> deserializer;
 
     private MonoCommandBuilder(ICommand command)
     {
@@ -66,9 +72,21 @@ public class MonoCommandBuilder<T>
         return this;
     }
 
-    public Mono<Result<String>> build()
+    public MonoCommandBuilder<T> withCachePort(int cachePort)
     {
-        Mono<String> mono = command.execute();
+        this.cachePort = cachePort;
+        return this;
+    }
+
+    public MonoCommandBuilder<T> withDeserializer(Deserializer<T> deserializer)
+    {
+        this.deserializer = deserializer;
+        return this;
+    }
+
+    public Mono<Result<T>> build()
+    {
+        Mono<Result<T>> mono = command.execute().map(Result::ofRawResponse);
 
         if (circuitBreaker != null)
         {
@@ -88,13 +106,23 @@ public class MonoCommandBuilder<T>
 
         return mono.timeout(timeout)
                    .retry(retries)
-                   .map(Result::ofRawResponse)
+                   .transform(new CacheDecorator<>(CacheKey.valueOf(command.toString()), cachePort))
+                   .map(this::deserialize)
                    .doOnError(this::handleError)
                    .onErrorResume(throwable -> Mono.just(Result.ofError(throwable)))
                    .doOnNext(r -> LOGGER.info(r.toString()))
                    .elapsed()
                    .doOnNext(this::logDuration)
                    .map(Tuple2::getT2);
+    }
+
+    private Result<T> deserialize(Result<T> rawResult)
+    {
+        String rawResponse = rawResult.getRawResponse();
+
+        T deserialize = deserializer.deserialize(rawResponse);
+
+        return rawResult.addDeserializedResponse(deserialize);
     }
 
     private void logDuration(Tuple2<Long, ? extends Result<?>> objects)
