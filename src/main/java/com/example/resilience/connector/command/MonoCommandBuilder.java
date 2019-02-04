@@ -86,7 +86,10 @@ public class MonoCommandBuilder<T>
 
     public Mono<Result<T>> build()
     {
-        Mono<Result<T>> mono = command.execute().map(Result::ofRawResponse);
+        Mono<Result<T>> mono = command.execute()
+                                      .map(Result::<T>ofRawResponse)
+                                      .timeout(timeout)
+                                      .retry(retries);
 
         if (circuitBreaker != null)
         {
@@ -103,10 +106,7 @@ public class MonoCommandBuilder<T>
             mono = mono.transform(BulkheadOperator.of(bulkhead));
         }
 
-
-        return mono.timeout(timeout)
-                   .retry(retries)
-                   .transform(new CacheDecorator<>(CacheKey.valueOf(command.toString()), cachePort))
+        return mono.transform(new CacheDecorator<>(CacheKey.valueOf(command.toString()), cachePort))
                    .map(this::deserialize)
                    .doOnError(this::handleError)
                    .onErrorResume(throwable -> Mono.just(Result.ofError(throwable)))

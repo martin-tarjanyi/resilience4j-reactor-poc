@@ -87,6 +87,31 @@ public class ResilienceIntegrationTest extends BaseConnectorIntegrationTest
     }
 
     @Test
+    public void shouldActivateCircuitBreakerWithTimeout()
+    {
+        // arrange
+        List<ICommand> commands = givenSlowCommands(5);
+        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withTimeout(Duration.ofMillis(100))
+                                                                               .withCircuitBreakerBufferSize(3)
+                                                                               .build();
+
+        // act
+        // sequential execution with concatmap to have stable result
+        Flux<Result<String>> results = Flux.fromIterable(commands)
+                                           .map(command -> createDescriptor(endpointConfiguration, command))
+                                           .concatMap(this::whenExecuteConnector);
+
+        // assert
+        StepVerifier.create(results)
+                    .assertNext(result -> assertException(result, TimeoutException.class))
+                    .assertNext(result -> assertException(result, TimeoutException.class))
+                    .assertNext(result -> assertException(result, TimeoutException.class))
+                    .assertNext(result -> assertException(result, CircuitBreakerOpenException.class))
+                    .assertNext(result -> assertException(result, CircuitBreakerOpenException.class))
+                    .verifyComplete();
+    }
+
+    @Test
     public void shouldActivateBulkhead()
     {
         // arrange
