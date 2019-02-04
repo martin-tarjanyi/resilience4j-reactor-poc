@@ -44,11 +44,6 @@ public class ResilienceIntegrationTest extends BaseConnectorIntegrationTest
                     .verifyComplete();
     }
 
-    private ICommand givenSlowCommand(Duration commandDuration)
-    {
-        return new DelayedTestCommand(commandDuration);
-    }
-
     @Test
     public void shouldTimeout()
     {
@@ -91,23 +86,6 @@ public class ResilienceIntegrationTest extends BaseConnectorIntegrationTest
                     .verifyComplete();
     }
 
-    private List<ICommand> givenErrorCommands(int numberOfCommands)
-    {
-        return IntStream.rangeClosed(1, numberOfCommands)
-                        .mapToObj(i -> givenErrorCommand())
-                        .collect(toList());
-    }
-
-    private EndpointConfiguration givenConfigurationWithBulkHead(int bulkhead)
-    {
-        return anEndpointConfiguration().withBulkhead(bulkhead).build();
-    }
-
-    private ICommand givenErrorCommand()
-    {
-        return new ErrorTestCommand();
-    }
-
     @Test
     public void shouldActivateBulkhead()
     {
@@ -125,13 +103,6 @@ public class ResilienceIntegrationTest extends BaseConnectorIntegrationTest
                     .expectNext(Result.ofResponse(DelayedTestCommand.RESPONSE))
                     .expectNext(Result.ofResponse(DelayedTestCommand.RESPONSE))
                     .verifyComplete();
-    }
-
-    private List<ICommand> givenSlowCommands(int numberOfCommands)
-    {
-        return IntStream.rangeClosed(1, numberOfCommands)
-                        .mapToObj(i -> givenSlowCommand(Duration.ofSeconds(1)))
-                        .collect(toList());
     }
 
     @Test
@@ -164,6 +135,35 @@ public class ResilienceIntegrationTest extends BaseConnectorIntegrationTest
         StepVerifier.create(resultMono)
                     .assertNext(result -> assertException(result, TestCommandException.class))
                     .verifyComplete();
+    }
+
+    private ICommand givenSlowCommand(Duration commandDuration)
+    {
+        return new DelayedTestCommand(commandDuration);
+    }
+
+    private List<ICommand> givenErrorCommands(int numberOfCommands)
+    {
+        return IntStream.rangeClosed(1, numberOfCommands)
+                        .mapToObj(i -> givenErrorCommand())
+                        .collect(toList());
+    }
+
+    private EndpointConfiguration givenConfigurationWithBulkHead(int bulkhead)
+    {
+        return anEndpointConfiguration().withBulkhead(bulkhead).build();
+    }
+
+    private ICommand givenErrorCommand()
+    {
+        return new ErrorTestCommand();
+    }
+
+    private List<ICommand> givenSlowCommands(int numberOfCommands)
+    {
+        return IntStream.rangeClosed(1, numberOfCommands)
+                        .mapToObj(i -> givenSlowCommand(Duration.ofSeconds(1)))
+                        .collect(toList());
     }
 
     private void assertException(Result<String> result, Class<? extends Throwable> type)
