@@ -16,7 +16,7 @@ import org.testng.annotations.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import static com.example.resilience.connector.builders.EndpointConfigurationBuilder.anEndpointConfiguration;
+import static com.example.resilience.connector.configuration.builder.EndpointConfigurationBuilder.aTestEndpointConfiguration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedisCommandIntegrationTest extends BaseConnectorIntegrationTest
@@ -26,7 +26,7 @@ public class RedisCommandIntegrationTest extends BaseConnectorIntegrationTest
     public void shouldSetInRedisCorrectly()
     {
         // arrange
-        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().build();
+        EndpointConfiguration endpointConfiguration = aTestEndpointConfiguration().build();
         ReactiveRedisTemplate<String, String> reactiveStringRedisTemplate = givenARedisTemplate("localhost");
         RedisCommand redisSetCommand = new RedisSetCommand(reactiveStringRedisTemplate, "key", "value");
         CommandDescriptor<String> commandDescriptor = createDescriptor(endpointConfiguration, redisSetCommand);
@@ -44,7 +44,7 @@ public class RedisCommandIntegrationTest extends BaseConnectorIntegrationTest
     public void shouldGetFromRedisCorrectly()
     {
         // arrange
-        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().build();
+        EndpointConfiguration endpointConfiguration = aTestEndpointConfiguration().build();
         ReactiveRedisTemplate<String, String> reactiveStringRedisTemplate = givenARedisTemplate("localhost");
         reactiveStringRedisTemplate.opsForValue().set("key", "value").block();
         RedisCommand redisSetCommand = new RedisGetCommand(reactiveStringRedisTemplate, CacheKey.valueOf("key"));
@@ -63,7 +63,7 @@ public class RedisCommandIntegrationTest extends BaseConnectorIntegrationTest
     public void shouldReturnErrorForUnknownHost()
     {
         // arrange
-        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().build();
+        EndpointConfiguration endpointConfiguration = aTestEndpointConfiguration().build();
         ReactiveRedisTemplate<String, String> reactiveStringRedisTemplate = givenARedisTemplate("unknownhost");
         RedisCommand redisSetCommand = new RedisSetCommand(reactiveStringRedisTemplate, "key", "value");
         CommandDescriptor<String> commandDescriptor = createDescriptor(endpointConfiguration, redisSetCommand);

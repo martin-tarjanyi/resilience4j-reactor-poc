@@ -15,7 +15,7 @@ import org.testng.annotations.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import static com.example.resilience.connector.builders.EndpointConfigurationBuilder.anEndpointConfiguration;
+import static com.example.resilience.connector.configuration.builder.EndpointConfigurationBuilder.aTestEndpointConfiguration;
 import static com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder.responseDefinition;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,8 +49,9 @@ public class HttpCommandIntegrationTest extends BaseConnectorIntegrationTest
     {
         // arrange
         ICommand httpCommand = givenHttpCommand("http://localhost:6060/ok");
-        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withCachePort(redis.getMappedPort(6379))
-                                                                               .build();
+        EndpointConfiguration endpointConfiguration = aTestEndpointConfiguration().withCachePort(
+                redis.getMappedPort(6379))
+                                                                                  .build();
 
         //act
         Mono<String> result = whenExecute(httpCommand, endpointConfiguration).map(Result::getResponse);
@@ -82,8 +83,9 @@ public class HttpCommandIntegrationTest extends BaseConnectorIntegrationTest
     {
         // arrange
         ICommand httpCommand = givenHttpCommand("http://localhost:6060/error");
-        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withCachePort(redis.getMappedPort(6379))
-                                                                               .build();
+        EndpointConfiguration endpointConfiguration = aTestEndpointConfiguration().withCachePort(
+                redis.getMappedPort(6379))
+                                                                                  .build();
 
         //act
         Mono<Result<String>> monoResult = whenExecute(httpCommand, endpointConfiguration);

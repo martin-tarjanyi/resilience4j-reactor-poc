@@ -1,4 +1,4 @@
-package com.example.resilience.connector.builders;
+package com.example.resilience.connector.configuration.builder;
 
 import com.example.resilience.connector.configuration.EndpointConfiguration;
 import com.example.resilience.connector.configuration.RateLimitConfiguration;
@@ -7,16 +7,29 @@ import java.time.Duration;
 
 public final class EndpointConfigurationBuilder
 {
-    private String name = "testEndpoint";
+    private String name;
     private int bulkhead = 10;
-    private int retries = 0;
-    private Duration timeout = Duration.ofSeconds(5);
-    private RateLimitConfiguration rateLimitConfiguration = new RateLimitConfiguration(false, Duration.ofSeconds(3), 3);
-    private int circuitBreakerBufferSize = 10;
+    private int retries;
+    private Duration timeout;
+    private RateLimitConfiguration rateLimitConfiguration;
+    private int circuitBreakerBufferSize;
     private int cachePort;
+    private boolean cacheEnabled;
 
     private EndpointConfigurationBuilder()
     {
+    }
+
+    public static EndpointConfigurationBuilder aTestEndpointConfiguration()
+    {
+        return new EndpointConfigurationBuilder().withName("testEndpoint")
+                                                 .withBulkhead(10)
+                                                 .withRetries(0)
+                                                 .withTimeout(Duration.ofSeconds(5))
+                                                 .withRateLimitConfiguration(
+                                                         new RateLimitConfiguration(false, Duration.ofSeconds(3), 3))
+                                                 .withCircuitBreakerBufferSize(10)
+                                                 .withCacheEnabled(false);
     }
 
     public static EndpointConfigurationBuilder anEndpointConfiguration()
@@ -66,9 +79,15 @@ public final class EndpointConfigurationBuilder
         return this;
     }
 
+    public EndpointConfigurationBuilder withCacheEnabled(boolean cacheEnabled)
+    {
+        this.cacheEnabled = cacheEnabled;
+        return this;
+    }
+
     public EndpointConfiguration build()
     {
         return new EndpointConfiguration(name, bulkhead, retries, timeout, rateLimitConfiguration,
-                circuitBreakerBufferSize, cachePort);
+                circuitBreakerBufferSize, cacheEnabled, cachePort);
     }
 }

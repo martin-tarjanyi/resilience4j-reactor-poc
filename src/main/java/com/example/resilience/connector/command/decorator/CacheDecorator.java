@@ -3,6 +3,7 @@ package com.example.resilience.connector.command.decorator;
 import com.example.resilience.connector.command.MonoCommandBuilder;
 import com.example.resilience.connector.command.redis.RedisGetCommand;
 import com.example.resilience.connector.command.redis.RedisSetCommand;
+import com.example.resilience.connector.configuration.EndpointConfiguration;
 import com.example.resilience.connector.model.CacheKey;
 import com.example.resilience.connector.model.Result;
 import com.example.resilience.connector.template.RedisTemplateFactory;
@@ -14,6 +15,7 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.util.function.Function;
 
+import static com.example.resilience.connector.configuration.builder.EndpointConfigurationBuilder.anEndpointConfiguration;
 import static com.example.resilience.connector.serialization.Serializers.STRING_DESERIALIZER;
 
 public class CacheDecorator<T> implements Function<Mono<Result<T>>, Mono<Result<T>>>
@@ -32,13 +34,6 @@ public class CacheDecorator<T> implements Function<Mono<Result<T>>, Mono<Result<
     @Override
     public Mono<Result<T>> apply(Mono<Result<T>> originalMono)
     {
-        if (cachePort == 0)
-        {
-            return originalMono;
-        }
-
-        LOGGER.info("Call cache.");
-
         ReactiveRedisTemplate<String, String> redisTemplate = RedisTemplateFactory.create("localhost", cachePort);
 
         return getFromCacheCommand(redisTemplate, cacheKey)
@@ -50,10 +45,14 @@ public class CacheDecorator<T> implements Function<Mono<Result<T>>, Mono<Result<
     private Mono<Result<T>> getFromCacheCommand(ReactiveRedisTemplate<String, String> redisTemplate,
             CacheKey cacheKey)
     {
-        RedisGetCommand redisGetStringCommand = new RedisGetCommand(redisTemplate, cacheKey);
+        LOGGER.info("Call cache with key: " + cacheKey);
 
-        Mono<Result<String>> getFromCacheMono = MonoCommandBuilder.<String>aBuilder(redisGetStringCommand)
-                .withTimeout(Duration.ofMillis(2000)).withDeserializer(STRING_DESERIALIZER).build();
+        RedisGetCommand redisGetCommand = new RedisGetCommand(redisTemplate, cacheKey);
+
+        EndpointConfiguration configuration = anEndpointConfiguration().withTimeout(Duration.ofMillis(2000)).build();
+
+        Mono<Result<String>> getFromCacheMono = MonoCommandBuilder.<String>aBuilder(redisGetCommand)
+                .withEndpointConfiguration(configuration).withDeserializer(STRING_DESERIALIZER).build();
 
         return getFromCacheMono.map(Result::<T>markAsRawResponseFromCache)
                                .onErrorResume(ex -> Mono.empty());
@@ -69,8 +68,10 @@ public class CacheDecorator<T> implements Function<Mono<Result<T>>, Mono<Result<
         RedisSetCommand redisSetStringCommand = new RedisSetCommand(redisTemplate, cacheKey.getValue(),
                 result.getRawResponse() + "rediiiiiiis");
 
-        Mono<Result<String>> setInCacheMono = MonoCommandBuilder.<String>aBuilder(redisSetStringCommand).withTimeout(
-                Duration.ofMillis(5000)).withDeserializer(STRING_DESERIALIZER).build();
+        EndpointConfiguration configuration = anEndpointConfiguration().withTimeout(Duration.ofMillis(5000)).build();
+
+        Mono<Result<String>> setInCacheMono = MonoCommandBuilder.<String>aBuilder(redisSetStringCommand)
+                .withEndpointConfiguration(configuration).withDeserializer(STRING_DESERIALIZER).build();
 
         // trigger async
         setInCacheMono.subscribe();

@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.IntStream;
 
-import static com.example.resilience.connector.builders.EndpointConfigurationBuilder.anEndpointConfiguration;
+import static com.example.resilience.connector.configuration.builder.EndpointConfigurationBuilder.aTestEndpointConfiguration;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -44,7 +44,7 @@ public class BlockingCommandIntegrationTest extends BaseConnectorIntegrationTest
     {
         // arrange
         ICommand command = givenBlockingCommandWithSuccess(Duration.ofMillis(200));
-        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().build();
+        EndpointConfiguration endpointConfiguration = aTestEndpointConfiguration().build();
 
         // act
         Mono<String> monoResult = whenExecute(command, endpointConfiguration).map(Result::getResponse);
@@ -60,7 +60,7 @@ public class BlockingCommandIntegrationTest extends BaseConnectorIntegrationTest
     {
         // arrange
         List<ICommand> commands = givenBlockingCommandsWithSuccess(65, Duration.ofMillis(200));
-        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withBulkhead(70).build();
+        EndpointConfiguration endpointConfiguration = aTestEndpointConfiguration().withBulkhead(70).build();
 
         Set<CommandDescriptor<String>> commandDescriptors =
                 createDescriptors(commands, endpointConfiguration);
@@ -82,7 +82,7 @@ public class BlockingCommandIntegrationTest extends BaseConnectorIntegrationTest
     {
         // arrange
         ICommand command = givenBlockingCommandWithError(Duration.ofMillis(200));
-        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().build();
+        EndpointConfiguration endpointConfiguration = aTestEndpointConfiguration().build();
 
         // act
         Mono<Result<String>> monoResult = whenExecute(command, endpointConfiguration);
@@ -110,7 +110,7 @@ public class BlockingCommandIntegrationTest extends BaseConnectorIntegrationTest
     {
         // arrange
         List<ICommand> commands = givenBlockingCommandsWithSuccess(5, Duration.ofMillis(200));
-        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withBulkhead(2).build();
+        EndpointConfiguration endpointConfiguration = aTestEndpointConfiguration().withBulkhead(2).build();
 
         Set<CommandDescriptor<String>> commandDescriptors =
                 createDescriptors(commands, endpointConfiguration);
@@ -133,7 +133,7 @@ public class BlockingCommandIntegrationTest extends BaseConnectorIntegrationTest
     {
         // arrange
         List<ICommand> commands = givenBlockingCommandsWithSuccess(10, Duration.ofMillis(200));
-        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withBulkhead(6).build();
+        EndpointConfiguration endpointConfiguration = aTestEndpointConfiguration().withBulkhead(6).build();
 
         Set<CommandDescriptor<String>> commandDescriptors = createDescriptors(commands, endpointConfiguration);
 

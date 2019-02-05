@@ -10,10 +10,12 @@ public class EndpointConfiguration
     private final Duration timeout;
     private final RateLimitConfiguration rateLimitConfiguration;
     private final int circuitBreakerBufferSize;
+    private final boolean cacheEnabled;
     private final int cachePort;
 
     public EndpointConfiguration(String name, int bulkhead, int retries, Duration timeout,
-            RateLimitConfiguration rateLimitConfiguration, int circuitBreakerBufferSize, int cachePort)
+            RateLimitConfiguration rateLimitConfiguration, int circuitBreakerBufferSize, boolean cacheEnabled,
+            int cachePort)
     {
         this.name = name;
         this.bulkhead = bulkhead;
@@ -21,6 +23,7 @@ public class EndpointConfiguration
         this.timeout = timeout;
         this.rateLimitConfiguration = rateLimitConfiguration;
         this.circuitBreakerBufferSize = circuitBreakerBufferSize;
+        this.cacheEnabled = cacheEnabled;
         this.cachePort = cachePort;
     }
 
@@ -52,6 +55,11 @@ public class EndpointConfiguration
     public int getCircuitBreakerBufferSize()
     {
         return circuitBreakerBufferSize;
+    }
+
+    public boolean isCacheEnabled()
+    {
+        return cacheEnabled;
     }
 
     public int getCachePort()

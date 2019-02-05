@@ -17,7 +17,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.example.resilience.connector.builders.EndpointConfigurationBuilder.anEndpointConfiguration;
+import static com.example.resilience.connector.configuration.builder.EndpointConfigurationBuilder.aTestEndpointConfiguration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class BlockingExecutionIntegrationTest extends BaseConnectorIntegrationTest
@@ -36,7 +36,7 @@ public class BlockingExecutionIntegrationTest extends BaseConnectorIntegrationTe
     {
         // arrange
         ICommand command = givenSlowCommand(Duration.ofSeconds(1));
-        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().build();
+        EndpointConfiguration endpointConfiguration = aTestEndpointConfiguration().build();
         CommandDescriptor<String> descriptor = createDescriptor(endpointConfiguration, command);
 
         // act
@@ -56,7 +56,7 @@ public class BlockingExecutionIntegrationTest extends BaseConnectorIntegrationTe
     {
         // arrange
         List<ICommand> commands = givenSlowCommands(42, Duration.ofSeconds(1));
-        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withBulkhead(50).build();
+        EndpointConfiguration endpointConfiguration = aTestEndpointConfiguration().withBulkhead(50).build();
         Set<CommandDescriptor<String>> descriptors = createDescriptors(commands, endpointConfiguration);
 
         // act

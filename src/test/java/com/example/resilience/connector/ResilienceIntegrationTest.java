@@ -21,7 +21,7 @@ import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.IntStream;
 
-import static com.example.resilience.connector.builders.EndpointConfigurationBuilder.anEndpointConfiguration;
+import static com.example.resilience.connector.configuration.builder.EndpointConfigurationBuilder.aTestEndpointConfiguration;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -32,7 +32,7 @@ public class ResilienceIntegrationTest extends BaseConnectorIntegrationTest
     {
         // arrange
         ICommand command = givenSlowCommand(Duration.ofSeconds(1));
-        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().build();
+        EndpointConfiguration endpointConfiguration = aTestEndpointConfiguration().build();
         CommandDescriptor<String> descriptor = createDescriptor(endpointConfiguration, command);
 
         //act
@@ -49,7 +49,7 @@ public class ResilienceIntegrationTest extends BaseConnectorIntegrationTest
     {
         // arrange
         ICommand command = givenSlowCommand(Duration.ofSeconds(1));
-        EndpointConfiguration endpointConfiguration = anEndpointConfiguration()
+        EndpointConfiguration endpointConfiguration = aTestEndpointConfiguration()
                 .withTimeout(Duration.ofMillis(500))
                 .build();
         CommandDescriptor<String> descriptor = createDescriptor(endpointConfiguration, command);
@@ -68,7 +68,8 @@ public class ResilienceIntegrationTest extends BaseConnectorIntegrationTest
     {
         // arrange
         List<ICommand> commands = givenErrorCommands(5);
-        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withCircuitBreakerBufferSize(3).build();
+        EndpointConfiguration endpointConfiguration = aTestEndpointConfiguration().withCircuitBreakerBufferSize(3)
+                                                                                  .build();
 
         // act
         // sequential execution with concatmap to have stable result
@@ -91,9 +92,9 @@ public class ResilienceIntegrationTest extends BaseConnectorIntegrationTest
     {
         // arrange
         List<ICommand> commands = givenSlowCommands(5);
-        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withTimeout(Duration.ofMillis(100))
-                                                                               .withCircuitBreakerBufferSize(3)
-                                                                               .build();
+        EndpointConfiguration endpointConfiguration = aTestEndpointConfiguration().withTimeout(Duration.ofMillis(100))
+                                                                                  .withCircuitBreakerBufferSize(3)
+                                                                                  .build();
 
         // act
         // sequential execution with concatmap to have stable result
@@ -134,7 +135,7 @@ public class ResilienceIntegrationTest extends BaseConnectorIntegrationTest
     public void shouldSucceedWithRetry()
     {
         ICommand command = new NTriesToSucceedTestCommand(3);
-        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withRetries(2).build();
+        EndpointConfiguration endpointConfiguration = aTestEndpointConfiguration().withRetries(2).build();
         CommandDescriptor<String> descriptor = createDescriptor(endpointConfiguration, command);
 
         //act
@@ -150,7 +151,7 @@ public class ResilienceIntegrationTest extends BaseConnectorIntegrationTest
     public void shouldFailWithNotEnoughRetry()
     {
         ICommand command = new NTriesToSucceedTestCommand(3);
-        EndpointConfiguration endpointConfiguration = anEndpointConfiguration().withRetries(1).build();
+        EndpointConfiguration endpointConfiguration = aTestEndpointConfiguration().withRetries(1).build();
         CommandDescriptor<String> descriptor = createDescriptor(endpointConfiguration, command);
 
         //act
@@ -176,7 +177,7 @@ public class ResilienceIntegrationTest extends BaseConnectorIntegrationTest
 
     private EndpointConfiguration givenConfigurationWithBulkHead(int bulkhead)
     {
-        return anEndpointConfiguration().withBulkhead(bulkhead).build();
+        return aTestEndpointConfiguration().withBulkhead(bulkhead).build();
     }
 
     private ICommand givenErrorCommand()

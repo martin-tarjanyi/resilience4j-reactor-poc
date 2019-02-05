@@ -49,16 +49,16 @@ public class Connector
                                     .ringBufferSizeInClosedState(configuration.getCircuitBreakerBufferSize())
                                     .build());
 
-        Bulkhead bulkhead = bulkheadRegistry.bulkhead(endpointName, BulkheadConfig.custom().maxConcurrentCalls(configuration.getBulkhead()).build());
+        Bulkhead bulkhead = bulkheadRegistry.bulkhead(endpointName,
+                BulkheadConfig.custom().maxConcurrentCalls(configuration.getBulkhead()).build());
+
         RateLimiter rateLimiter = rateLimiter(endpointName, configuration.getRateLimitConfiguration());
 
         return MonoCommandBuilder.<T>aBuilder(commandDescriptor.getCommand())
+                .withEndpointConfiguration(configuration)
                 .withCircuitBreaker(circuitBreaker)
                 .withBulkhead(bulkhead)
                 .withRateLimiter(rateLimiter)
-                .withRetries(configuration.getRetries())
-                .withTimeout(configuration.getTimeout())
-                .withCachePort(configuration.getCachePort())
                 .withDeserializer(commandDescriptor.getDeserializer())
                 .build();
     }

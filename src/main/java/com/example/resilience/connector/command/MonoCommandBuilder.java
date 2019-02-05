@@ -1,6 +1,7 @@
 package com.example.resilience.connector.command;
 
 import com.example.resilience.connector.command.decorator.CacheDecorator;
+import com.example.resilience.connector.configuration.EndpointConfiguration;
 import com.example.resilience.connector.model.CacheKey;
 import com.example.resilience.connector.model.Result;
 import com.example.resilience.connector.serialization.Deserializer;
@@ -23,14 +24,14 @@ public class MonoCommandBuilder<T>
 
     private final ICommand command;
 
-    private int retries = 0;
+    private int retries;
     private CircuitBreaker circuitBreaker;
     private Bulkhead bulkhead;
     private RateLimiter rateLimiter;
     private Duration timeout;
     private int cachePort;
-    private boolean cacheEnabled = false;
     private Deserializer<T> deserializer;
+    private boolean cacheEnabled;
 
     private MonoCommandBuilder(ICommand command)
     {
@@ -40,6 +41,15 @@ public class MonoCommandBuilder<T>
     public static <T> MonoCommandBuilder<T> aBuilder(ICommand command)
     {
         return new MonoCommandBuilder<>(command);
+    }
+
+    public MonoCommandBuilder<T> withEndpointConfiguration(EndpointConfiguration configuration)
+    {
+        this.retries = configuration.getRetries();
+        this.timeout = configuration.getTimeout();
+        this.cacheEnabled = configuration.isCacheEnabled();
+        this.cachePort = configuration.getCachePort();
+        return this;
     }
 
     public MonoCommandBuilder<T> withCircuitBreaker(CircuitBreaker circuitBreaker)
@@ -57,24 +67,6 @@ public class MonoCommandBuilder<T>
     public MonoCommandBuilder<T> withBulkhead(Bulkhead bulkhead)
     {
         this.bulkhead = bulkhead;
-        return this;
-    }
-
-    public MonoCommandBuilder<T> withRetries(int retries)
-    {
-        this.retries = retries;
-        return this;
-    }
-
-    public MonoCommandBuilder<T> withTimeout(Duration timeout)
-    {
-        this.timeout = timeout;
-        return this;
-    }
-
-    public MonoCommandBuilder<T> withCachePort(int cachePort)
-    {
-        this.cachePort = cachePort;
         return this;
     }
 
@@ -106,9 +98,13 @@ public class MonoCommandBuilder<T>
             mono = mono.transform(BulkheadOperator.of(bulkhead));
         }
 
-        return mono.transform(new CacheDecorator<>(CacheKey.valueOf(command.toString()), cachePort))
-                   .map(this::deserialize)
-                   .doOnError(this::handleError)
+        if (cacheEnabled)
+        {
+            mono = mono.transform(new CacheDecorator<>(CacheKey.valueOf(command.toString()), cachePort));
+        }
+
+        return mono.map(this::deserialize)
+                   .doOnError(this::logError)
                    .onErrorResume(throwable -> Mono.just(Result.ofError(throwable)))
                    .doOnNext(r -> LOGGER.info(r.toString()))
                    .elapsed()
@@ -130,7 +126,7 @@ public class MonoCommandBuilder<T>
         LOGGER.info("Command duration: " + objects.getT1() + " milliseconds");
     }
 
-    private void handleError(Throwable t)
+    private void logError(Throwable t)
     {
         LOGGER.error("Command failed.", t);
     }
