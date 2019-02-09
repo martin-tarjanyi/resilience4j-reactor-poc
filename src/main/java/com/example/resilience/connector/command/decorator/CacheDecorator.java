@@ -66,7 +66,7 @@ public class CacheDecorator<T> implements Function<Mono<Result<T>>, Mono<Result<
         }
 
         RedisSetCommand redisSetStringCommand = new RedisSetCommand(redisTemplate, cacheKey.getValue(),
-                result.getRawResponse() + "rediiiiiiis");
+                result.getRawResponse());
 
         EndpointConfiguration configuration = anEndpointConfiguration().withTimeout(Duration.ofMillis(5000)).build();
 
