@@ -12,7 +12,7 @@ public final class EndpointConfigurationBuilder
     private int bulkhead = 10;
     private int retries;
     private Duration timeout;
-    private RateLimitConfiguration rateLimitConfiguration;
+    private RateLimitConfiguration rateLimitConfiguration = new RateLimitConfiguration(false, null, 0);
     private int circuitBreakerBufferSize;
     private int cachePort;
     private boolean cacheEnabled;
