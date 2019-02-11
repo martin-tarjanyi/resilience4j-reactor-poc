@@ -11,9 +11,6 @@
         </Console>
     </Appenders>
     <Loggers>
-        <!--<logger name="io.github" level="debug">-->
-            <!--<AppenderRef ref="ConsoleAppender"/>-->
-        <!--</logger>-->
         <Root level="info">
             <AppenderRef ref="ConsoleAppender"/>
         </Root>

@@ -14,19 +14,23 @@ import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.ratelimiter.RateLimiter;
 import io.github.resilience4j.ratelimiter.RateLimiterConfig;
 import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Collection;
 import java.util.List;
 
+@Component
 public class Connector
 {
     private final CircuitBreakerRegistry circuitBreakerRegistry;
     private final BulkheadRegistry bulkheadRegistry;
     private final RateLimiterRegistry rateLimiterRegistry;
 
-    Connector(CircuitBreakerRegistry circuitBreakerRegistry, BulkheadRegistry bulkheadRegistry,
+    @Autowired
+    public Connector(CircuitBreakerRegistry circuitBreakerRegistry, BulkheadRegistry bulkheadRegistry,
             RateLimiterRegistry rateLimiterRegistry)
     {
         this.circuitBreakerRegistry = circuitBreakerRegistry;

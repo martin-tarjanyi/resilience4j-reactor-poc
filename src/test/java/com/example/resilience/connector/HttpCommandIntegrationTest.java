@@ -49,9 +49,7 @@ public class HttpCommandIntegrationTest extends BaseConnectorIntegrationTest
     {
         // arrange
         ICommand httpCommand = givenHttpCommand("http://localhost:6060/ok");
-        EndpointConfiguration endpointConfiguration = aTestEndpointConfiguration().withCachePort(
-                redis.getMappedPort(6379))
-                                                                                  .build();
+        EndpointConfiguration endpointConfiguration = aTestEndpointConfiguration().build();
 
         //act
         Mono<String> result = whenExecute(httpCommand, endpointConfiguration).map(Result::getResponse);
@@ -59,6 +57,22 @@ public class HttpCommandIntegrationTest extends BaseConnectorIntegrationTest
         // assert
         StepVerifier.create(result)
                     .expectNext(HTTP_RESPONSE_BODY)
+                    .verifyComplete();
+    }
+
+    @Test
+    public void shouldReturnAResultWithExceptionWhenHttpServerRespondsWith500()
+    {
+        // arrange
+        ICommand httpCommand = givenHttpCommand("http://localhost:6060/error");
+        EndpointConfiguration endpointConfiguration = aTestEndpointConfiguration().build();
+
+        //act
+        Mono<Result<String>> monoResult = whenExecute(httpCommand, endpointConfiguration);
+
+        // assert
+        StepVerifier.create(monoResult)
+                    .assertNext(result -> assertThat(result.getThrowable()).isInstanceOf(HttpCommandException.class))
                     .verifyComplete();
     }
 
@@ -76,23 +90,5 @@ public class HttpCommandIntegrationTest extends BaseConnectorIntegrationTest
                                                                               .build();
 
         return connector.execute(commandDescriptor);
-    }
-
-    @Test
-    public void shouldReturnAResultWithExceptionWhenHttpServerRespondsWith500()
-    {
-        // arrange
-        ICommand httpCommand = givenHttpCommand("http://localhost:6060/error");
-        EndpointConfiguration endpointConfiguration = aTestEndpointConfiguration().withCachePort(
-                redis.getMappedPort(6379))
-                                                                                  .build();
-
-        //act
-        Mono<Result<String>> monoResult = whenExecute(httpCommand, endpointConfiguration);
-
-        // assert
-        StepVerifier.create(monoResult)
-                    .assertNext(result -> assertThat(result.getThrowable()).isInstanceOf(HttpCommandException.class))
-                    .verifyComplete();
     }
 }

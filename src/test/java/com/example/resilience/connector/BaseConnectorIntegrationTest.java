@@ -1,15 +1,16 @@
 package com.example.resilience.connector;
 
 import com.example.resilience.connector.command.ICommand;
+import com.example.resilience.connector.configuration.ConnectorConfiguration;
 import com.example.resilience.connector.configuration.EndpointConfiguration;
 import com.example.resilience.connector.model.CommandDescriptor;
 import com.example.resilience.connector.model.CommandDescriptorBuilder;
 import com.example.resilience.connector.model.Result;
 import com.example.resilience.connector.template.RedisTemplateFactory;
-import io.github.resilience4j.bulkhead.BulkheadRegistry;
-import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
-import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
 import org.testcontainers.containers.GenericContainer;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeMethod;
@@ -21,13 +22,15 @@ import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
 
-public class BaseConnectorIntegrationTest
+@ContextConfiguration(classes = ConnectorConfiguration.class)
+public class BaseConnectorIntegrationTest extends AbstractTestNGSpringContextTests
 {
     private static final int REDIS_CONTAINER_PORT = 6379;
 
     protected static GenericContainer redis;
     protected static ReactiveRedisTemplate<String, String> redisTemplate;
 
+    @Autowired
     protected Connector connector;
 
     @BeforeSuite
@@ -48,9 +51,6 @@ public class BaseConnectorIntegrationTest
     @BeforeMethod
     public void beforeMethod()
     {
-        connector = new Connector(CircuitBreakerRegistry.ofDefaults(), BulkheadRegistry.ofDefaults(),
-                RateLimiterRegistry.ofDefaults());
-
         redisTemplate.keys("*")
                      .flatMap(key -> redisTemplate.delete(key))
                      .collectList()

@@ -4,6 +4,7 @@ import com.example.resilience.connector.configuration.EndpointConfiguration;
 import com.example.resilience.connector.configuration.RateLimitConfiguration;
 
 import java.time.Duration;
+import java.util.UUID;
 
 public final class EndpointConfigurationBuilder
 {
@@ -22,7 +23,7 @@ public final class EndpointConfigurationBuilder
 
     public static EndpointConfigurationBuilder aTestEndpointConfiguration()
     {
-        return new EndpointConfigurationBuilder().withName("testEndpoint")
+        return new EndpointConfigurationBuilder().withName(UUID.randomUUID().toString())
                                                  .withBulkhead(10)
                                                  .withRetries(0)
                                                  .withTimeout(Duration.ofSeconds(5))

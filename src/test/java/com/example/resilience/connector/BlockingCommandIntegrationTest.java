@@ -8,11 +8,7 @@ import com.example.resilience.connector.testcommands.BlockingErrorTestCommand;
 import com.example.resilience.connector.testcommands.BlockingTestCommand;
 import com.example.resilience.connector.testcommands.TestCommandException;
 import io.github.resilience4j.bulkhead.BulkheadFullException;
-import io.github.resilience4j.bulkhead.BulkheadRegistry;
-import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
-import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
 import org.assertj.core.api.Condition;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -30,15 +26,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class BlockingCommandIntegrationTest extends BaseConnectorIntegrationTest
 {
-    private Connector connector;
-
-    @BeforeMethod
-    public void beforeMethod()
-    {
-        connector = new Connector(CircuitBreakerRegistry.ofDefaults(), BulkheadRegistry.ofDefaults(),
-                RateLimiterRegistry.ofDefaults());
-    }
-
     @Test
     public void shouldReturnSuccessWhenBlockingCommandExecuted()
     {
@@ -93,18 +80,6 @@ public class BlockingCommandIntegrationTest extends BaseConnectorIntegrationTest
                     .verifyComplete();
     }
 
-    private List<ICommand> givenBlockingCommandsWithSuccess(int n, Duration duration)
-    {
-        return IntStream.rangeClosed(1, n)
-                        .mapToObj(i -> givenBlockingCommandWithSuccess(duration))
-                        .collect(toList());
-    }
-
-    private ICommand givenBlockingCommandWithSuccess(Duration duration)
-    {
-        return new BlockingTestCommand(duration);
-    }
-
     @Test
     public void shouldLimitConcurrencyByBulkhead()
     {
@@ -152,6 +127,18 @@ public class BlockingCommandIntegrationTest extends BaseConnectorIntegrationTest
         assertThat(blockingResults).hasSize(10)
                                    .haveExactly(6, errorCondition)
                                    .haveExactly(4, successCondition);
+    }
+
+    private List<ICommand> givenBlockingCommandsWithSuccess(int n, Duration duration)
+    {
+        return IntStream.rangeClosed(1, n)
+                        .mapToObj(i -> givenBlockingCommandWithSuccess(duration))
+                        .collect(toList());
+    }
+
+    private ICommand givenBlockingCommandWithSuccess(Duration duration)
+    {
+        return new BlockingTestCommand(duration);
     }
 
     private ICommand givenBlockingCommandWithError(Duration duration)

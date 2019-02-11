@@ -5,10 +5,6 @@ import com.example.resilience.connector.configuration.EndpointConfiguration;
 import com.example.resilience.connector.model.CommandDescriptor;
 import com.example.resilience.connector.model.Result;
 import com.example.resilience.connector.testcommands.DelayedTestCommand;
-import io.github.resilience4j.bulkhead.BulkheadRegistry;
-import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
-import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.time.Duration;
@@ -22,15 +18,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class BlockingExecutionIntegrationTest extends BaseConnectorIntegrationTest
 {
-    private Connector connector;
-
-    @BeforeMethod
-    public void beforeMethod()
-    {
-        connector = new Connector(CircuitBreakerRegistry.ofDefaults(), BulkheadRegistry.ofDefaults(),
-                RateLimiterRegistry.ofDefaults());
-    }
-
     @Test
     public void shouldExecuteSingleBlockingCorrectly()
     {
@@ -44,11 +31,6 @@ public class BlockingExecutionIntegrationTest extends BaseConnectorIntegrationTe
 
         // assert
         assertThat(result).isEqualTo(Result.ofResponse(DelayedTestCommand.RESPONSE));
-    }
-
-    private ICommand givenSlowCommand(Duration duration)
-    {
-        return new DelayedTestCommand(duration);
     }
 
     @Test
@@ -66,6 +48,11 @@ public class BlockingExecutionIntegrationTest extends BaseConnectorIntegrationTe
         assertThat(results).hasSize(42)
                            .extracting(Result::getResponse)
                            .allSatisfy(response -> assertThat(response).isEqualTo(DelayedTestCommand.RESPONSE));
+    }
+
+    private ICommand givenSlowCommand(Duration duration)
+    {
+        return new DelayedTestCommand(duration);
     }
 
     private List<ICommand> givenSlowCommands(int n, Duration duration)
