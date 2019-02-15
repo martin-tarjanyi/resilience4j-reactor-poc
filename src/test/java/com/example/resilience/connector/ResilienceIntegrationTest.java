@@ -16,6 +16,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
@@ -23,6 +24,7 @@ import java.util.stream.IntStream;
 
 import static com.example.resilience.connector.configuration.builder.EndpointConfigurationBuilder.aTestEndpointConfiguration;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toUnmodifiableList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ResilienceIntegrationTest extends BaseConnectorIntegrationTest
@@ -42,6 +44,26 @@ public class ResilienceIntegrationTest extends BaseConnectorIntegrationTest
         StepVerifier.create(result)
                     .expectNext(DelayedTestCommand.RESPONSE)
                     .verifyComplete();
+    }
+
+    @Test
+    public void shouldExecuteMultipleCommandsSuccessfully()
+    {
+        // arrange
+        List<ICommand> command = givenSlowCommands(130);
+        EndpointConfiguration endpointConfiguration = aTestEndpointConfiguration().withBulkhead(130).build();
+        Set<CommandDescriptor<String>> descriptors = createDescriptors(command, endpointConfiguration);
+
+        //act
+        Flux<String> result = connector.execute(descriptors).map(Result::getResponse);
+
+        String[] expectedResponses = Collections.nCopies(130, DelayedTestCommand.RESPONSE).toArray(String[]::new);
+
+        // assert
+        StepVerifier.create(result)
+                    .expectNext(expectedResponses)
+                    .expectComplete()
+                    .verify(Duration.ofMillis(1500));
     }
 
     @Test
@@ -172,7 +194,7 @@ public class ResilienceIntegrationTest extends BaseConnectorIntegrationTest
     {
         return IntStream.rangeClosed(1, numberOfCommands)
                         .mapToObj(i -> givenErrorCommand())
-                        .collect(toList());
+                        .collect(toUnmodifiableList());
     }
 
     private EndpointConfiguration givenConfigurationWithBulkHead(int bulkhead)

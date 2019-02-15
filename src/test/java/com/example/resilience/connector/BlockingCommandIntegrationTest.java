@@ -61,7 +61,8 @@ public class BlockingCommandIntegrationTest extends BaseConnectorIntegrationTest
 
         StepVerifier.create(monoResult)
                     .expectNext(results)
-                    .verifyComplete();
+                    .expectComplete()
+                    .verify(Duration.ofMillis(300));
     }
 
     @Test
