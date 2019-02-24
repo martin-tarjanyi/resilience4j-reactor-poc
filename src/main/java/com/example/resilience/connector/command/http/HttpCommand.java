@@ -1,6 +1,7 @@
 package com.example.resilience.connector.command.http;
 
 import com.example.resilience.connector.command.ICommand;
+import com.example.resilience.connector.model.CacheKey;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -25,6 +26,12 @@ public class HttpCommand implements ICommand
                         .exchange()
                         .flatMap(this::verify)
                         .flatMap(o -> o.bodyToMono(String.class));
+    }
+
+    @Override
+    public CacheKey cacheKey()
+    {
+        return CacheKey.valueOf(uri);
     }
 
     private Mono<ClientResponse> verify(ClientResponse httpResponse)

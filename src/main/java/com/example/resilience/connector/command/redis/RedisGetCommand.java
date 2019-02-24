@@ -20,4 +20,10 @@ public class RedisGetCommand extends RedisCommand
     {
         return redisTemplate.opsForValue().get(cacheKey.getValue());
     }
+
+    @Override
+    public CacheKey cacheKey()
+    {
+        throw new IllegalStateException("Cache command can not be cached.");
+    }
 }

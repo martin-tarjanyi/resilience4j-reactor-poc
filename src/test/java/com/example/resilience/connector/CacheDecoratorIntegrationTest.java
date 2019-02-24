@@ -3,6 +3,7 @@ package com.example.resilience.connector;
 import com.example.resilience.connector.command.ICommand;
 import com.example.resilience.connector.configuration.EndpointConfiguration;
 import com.example.resilience.connector.configuration.builder.EndpointConfigurationBuilder;
+import com.example.resilience.connector.model.CacheKey;
 import com.example.resilience.connector.model.CommandDescriptor;
 import com.example.resilience.connector.model.CommandDescriptorBuilder;
 import com.example.resilience.connector.model.Result;
@@ -23,7 +24,7 @@ public class CacheDecoratorIntegrationTest extends BaseConnectorIntegrationTest
         ICommand command = givenCommand();
         EndpointConfiguration configuration = givenConfigurationWithEnabledCache();
         CommandDescriptor<String> commandDescriptor = givenCommandDescriptor(command, configuration);
-        givenEntryInRedis(command.toString(), CACHE_RESPONSE);
+        givenEntryInRedis(command.cacheKey(), CACHE_RESPONSE);
 
         Result<String> actualResult = whenExecuteBlocking(commandDescriptor);
 
@@ -40,7 +41,7 @@ public class CacheDecoratorIntegrationTest extends BaseConnectorIntegrationTest
         Result<String> stringResult = whenExecuteBlocking(commandDescriptor);
 
         thenResponseIs(stringResult, SimpleTestCommand.RESPONSE);
-        thenCacheContains(command.toString(), SimpleTestCommand.RESPONSE);
+        thenCacheContains(command.cacheKey(), SimpleTestCommand.RESPONSE);
     }
 
     private CommandDescriptor<String> givenCommandDescriptor(ICommand command, EndpointConfiguration configuration)
@@ -64,9 +65,9 @@ public class CacheDecoratorIntegrationTest extends BaseConnectorIntegrationTest
                                            .build();
     }
 
-    private void givenEntryInRedis(String key, String value)
+    private void givenEntryInRedis(CacheKey key, String value)
     {
-        redisTemplate.opsForValue().set(key, value).block();
+        redisTemplate.opsForValue().set(key.getValue(), value).block();
     }
 
     private void thenResponseIs(Result<String> stringResult, String expectedResponse)
@@ -74,10 +75,11 @@ public class CacheDecoratorIntegrationTest extends BaseConnectorIntegrationTest
         assertThat(stringResult.getResponse()).isEqualTo(expectedResponse);
     }
 
-    private void thenCacheContains(String expectedKey, String expectedValue)
+    private void thenCacheContains(CacheKey expectedKey, String expectedValue)
     {
         await().atMost(Duration.FIVE_SECONDS)
                .untilAsserted(
-                       () -> assertThat(redisTemplate.opsForValue().get(expectedKey).block()).isEqualTo(expectedValue));
+                       () -> assertThat(redisTemplate.opsForValue().get(expectedKey.getValue()).block()).isEqualTo(
+                               expectedValue));
     }
 }

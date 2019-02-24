@@ -17,6 +17,7 @@ import java.util.function.Function;
 
 import static com.example.resilience.connector.configuration.builder.EndpointConfigurationBuilder.anEndpointConfiguration;
 import static com.example.resilience.connector.serialization.Serializers.STRING_DESERIALIZER;
+import static java.util.function.Predicate.not;
 
 public class CacheDecorator<T> implements Function<Mono<Result<T>>, Mono<Result<T>>>
 {
@@ -38,8 +39,8 @@ public class CacheDecorator<T> implements Function<Mono<Result<T>>, Mono<Result<
 
         return getFromCacheCommand(redisTemplate, cacheKey)
                 .filter(Result::isSuccess)
-                .switchIfEmpty(originalMono)
-                .doOnNext(result -> saveToCacheAsync(redisTemplate, result));
+                .filter(not(Result::isRawResponseNull))
+                .switchIfEmpty(originalMono.doOnNext(result -> saveToCacheAsync(redisTemplate, result)));
     }
 
     private Mono<Result<T>> getFromCacheCommand(ReactiveRedisTemplate<String, String> redisTemplate,
@@ -49,18 +50,21 @@ public class CacheDecorator<T> implements Function<Mono<Result<T>>, Mono<Result<
 
         RedisGetCommand redisGetCommand = new RedisGetCommand(redisTemplate, cacheKey);
 
-        EndpointConfiguration configuration = anEndpointConfiguration().withTimeout(Duration.ofMillis(2000)).build();
+        EndpointConfiguration configuration = anEndpointConfiguration().withLoggingEnabled(false)
+                                                                       .withTimeout(Duration.ofMillis(2000))
+                                                                       .build();
 
         Mono<Result<String>> getFromCacheMono = MonoCommandBuilder.<String>aBuilder(redisGetCommand)
                 .withEndpointConfiguration(configuration).withDeserializer(STRING_DESERIALIZER).build();
 
-        return getFromCacheMono.map(Result::<T>markAsRawResponseFromCache)
-                               .onErrorResume(ex -> Mono.empty());
+        return getFromCacheMono
+                .map(Result::<T>markAsRawResponseFromCache)
+                .onErrorResume(ex -> Mono.just(Result.ofError(ex)));
     }
 
     private void saveToCacheAsync(ReactiveRedisTemplate<String, String> redisTemplate, Result<T> result)
     {
-        if (result.isFromCache())
+        if (result.isFromCache() || result.isRawResponseNull())
         {
             return;
         }
@@ -68,7 +72,9 @@ public class CacheDecorator<T> implements Function<Mono<Result<T>>, Mono<Result<
         RedisSetCommand redisSetStringCommand = new RedisSetCommand(redisTemplate, cacheKey.getValue(),
                 result.getRawResponse());
 
-        EndpointConfiguration configuration = anEndpointConfiguration().withTimeout(Duration.ofMillis(5000)).build();
+        EndpointConfiguration configuration = anEndpointConfiguration().withLoggingEnabled(false)
+                                                                       .withTimeout(Duration.ofMillis(5000))
+                                                                       .build();
 
         Mono<Result<String>> setInCacheMono = MonoCommandBuilder.<String>aBuilder(redisSetStringCommand)
                 .withEndpointConfiguration(configuration).withDeserializer(STRING_DESERIALIZER).build();

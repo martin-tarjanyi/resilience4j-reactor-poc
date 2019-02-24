@@ -16,6 +16,7 @@ public final class EndpointConfigurationBuilder
     private int circuitBreakerBufferSize;
     private int cachePort;
     private boolean cacheEnabled;
+    private boolean loggingEnabled = true;
 
     private EndpointConfigurationBuilder()
     {
@@ -86,9 +87,15 @@ public final class EndpointConfigurationBuilder
         return this;
     }
 
+    public EndpointConfigurationBuilder withLoggingEnabled(boolean loggingEnabled)
+    {
+        this.loggingEnabled = loggingEnabled;
+        return this;
+    }
+
     public EndpointConfiguration build()
     {
         return new EndpointConfiguration(name, bulkhead, retries, timeout, rateLimitConfiguration,
-                circuitBreakerBufferSize, cacheEnabled, cachePort);
+                circuitBreakerBufferSize, cacheEnabled, cachePort, loggingEnabled);
     }
 }
