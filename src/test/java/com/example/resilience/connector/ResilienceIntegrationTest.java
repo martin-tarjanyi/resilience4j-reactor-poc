@@ -63,7 +63,7 @@ public class ResilienceIntegrationTest extends BaseConnectorIntegrationTest
         StepVerifier.create(result)
                     .expectNext(expectedResponses)
                     .expectComplete()
-                    .verify(Duration.ofMillis(1500));
+                    .verify(Duration.ofMillis(2000));
     }
 
     @Test
