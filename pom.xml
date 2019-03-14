@@ -256,7 +256,6 @@
                             <destFile>${project.build.directory}/coverage-reports/jacoco-it.exec</destFile>
                         </configuration>
                     </execution>
-
                     <execution>
                         <id>post-integration-test</id>
                         <phase>post-integration-test</phase>
