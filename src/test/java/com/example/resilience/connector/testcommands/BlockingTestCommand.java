@@ -30,7 +30,7 @@ public class BlockingTestCommand extends BlockingCommand
     }
 
     @Override
-    public CacheKey cacheKey()
+    public CacheKey generateCacheKey()
     {
         return CacheKey.valueOf(duration.toString());
     }

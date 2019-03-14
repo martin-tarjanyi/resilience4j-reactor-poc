@@ -36,7 +36,7 @@ public class NTriesToSucceedTestCommand implements ICommand
     }
 
     @Override
-    public CacheKey cacheKey()
+    public CacheKey generateCacheKey()
     {
         return CacheKey.valueOf(String.valueOf(triesToSucceed));
     }

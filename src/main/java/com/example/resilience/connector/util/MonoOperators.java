@@ -8,8 +8,12 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-public class MonoOperators
+public final class MonoOperators
 {
+    private MonoOperators()
+    {
+    }
+
     public static <T, V> Function<? super Mono<T>, ? extends Publisher<V>> mapWithContext(
             BiFunction<T, Context, V> mapper)
     {

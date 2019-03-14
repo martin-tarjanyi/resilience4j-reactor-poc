@@ -7,5 +7,5 @@ public interface ICommand
 {
     Mono<String> execute();
 
-    CacheKey cacheKey();
+    CacheKey generateCacheKey();
 }

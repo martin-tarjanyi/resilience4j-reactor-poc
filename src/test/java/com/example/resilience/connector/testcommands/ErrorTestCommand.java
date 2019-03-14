@@ -13,7 +13,7 @@ public class ErrorTestCommand implements ICommand
     }
 
     @Override
-    public CacheKey cacheKey()
+    public CacheKey generateCacheKey()
     {
         return CacheKey.valueOf("error");
     }

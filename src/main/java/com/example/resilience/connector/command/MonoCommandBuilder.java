@@ -21,7 +21,7 @@ import java.time.Duration;
 
 import static com.example.resilience.connector.util.MonoOperators.doWithContext;
 
-public class MonoCommandBuilder<T>
+public final class MonoCommandBuilder<T>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(MonoCommandBuilder.class);
 
@@ -106,7 +106,7 @@ public class MonoCommandBuilder<T>
 
         if (cacheEnabled)
         {
-            mono = mono.transform(new CacheDecorator<>(command.cacheKey(), cachePort));
+            mono = mono.transform(new CacheDecorator<>(command.generateCacheKey(), cachePort));
         }
 
         return mono.map(this::deserialize)

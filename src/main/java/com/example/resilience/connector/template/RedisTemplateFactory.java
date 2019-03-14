@@ -5,8 +5,12 @@ import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactor
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 
-public class RedisTemplateFactory
+public final class RedisTemplateFactory
 {
+    private RedisTemplateFactory()
+    {
+    }
+
     public static ReactiveRedisTemplate<String, String> create(String host, int port)
     {
         LettuceConnectionFactory reactiveRedisConnectionFactory = new LettuceConnectionFactory(

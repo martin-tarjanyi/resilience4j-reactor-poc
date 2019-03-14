@@ -24,7 +24,7 @@ public class CacheDecoratorIntegrationTest extends BaseConnectorIntegrationTest
         ICommand command = givenCommand();
         EndpointConfiguration configuration = givenConfigurationWithEnabledCache();
         CommandDescriptor<String> commandDescriptor = givenCommandDescriptor(command, configuration);
-        givenEntryInRedis(command.cacheKey(), CACHE_RESPONSE);
+        givenEntryInRedis(command.generateCacheKey(), CACHE_RESPONSE);
 
         Result<String> actualResult = whenExecuteBlocking(commandDescriptor);
 
@@ -41,7 +41,7 @@ public class CacheDecoratorIntegrationTest extends BaseConnectorIntegrationTest
         Result<String> stringResult = whenExecuteBlocking(commandDescriptor);
 
         thenResponseIs(stringResult, SimpleTestCommand.RESPONSE);
-        thenCacheContains(command.cacheKey(), SimpleTestCommand.RESPONSE);
+        thenCacheContains(command.generateCacheKey(), SimpleTestCommand.RESPONSE);
     }
 
     private CommandDescriptor<String> givenCommandDescriptor(ICommand command, EndpointConfiguration configuration)

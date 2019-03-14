@@ -5,7 +5,7 @@ import lombok.ToString;
 
 @ToString
 @EqualsAndHashCode
-public class CacheKey
+public final class CacheKey
 {
     private final String value;
 

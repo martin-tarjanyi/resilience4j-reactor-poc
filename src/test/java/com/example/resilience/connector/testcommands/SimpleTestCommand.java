@@ -24,7 +24,7 @@ public class SimpleTestCommand implements ICommand
     }
 
     @Override
-    public CacheKey cacheKey()
+    public CacheKey generateCacheKey()
     {
         return CacheKey.valueOf(String.valueOf(id));
     }

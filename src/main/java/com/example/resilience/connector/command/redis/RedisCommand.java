@@ -8,7 +8,7 @@ public abstract class RedisCommand implements ICommand
 {
     private final ReactiveRedisTemplate<String, String> redisTemplate;
 
-    RedisCommand(ReactiveRedisTemplate<String, String> redisTemplate)
+    public RedisCommand(ReactiveRedisTemplate<String, String> redisTemplate)
     {
         this.redisTemplate = redisTemplate;
     }

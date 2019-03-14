@@ -22,7 +22,7 @@ public class RedisGetCommand extends RedisCommand
     }
 
     @Override
-    public CacheKey cacheKey()
+    public CacheKey generateCacheKey()
     {
         throw new IllegalStateException("Cache command can not be cached.");
     }

@@ -5,7 +5,7 @@ import lombok.ToString;
 
 @ToString
 @EqualsAndHashCode
-public class Result<T>
+public final class Result<T>
 {
     private final T response;
     private final String rawResponse;

@@ -29,7 +29,7 @@ public class HttpCommand implements ICommand
     }
 
     @Override
-    public CacheKey cacheKey()
+    public CacheKey generateCacheKey()
     {
         return CacheKey.valueOf(uri);
     }

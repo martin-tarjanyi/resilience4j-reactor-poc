@@ -10,7 +10,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 @ToString
 @EqualsAndHashCode
-public class LogContext
+public final class LogContext
 {
     private final Collection<Result<?>> results;
 

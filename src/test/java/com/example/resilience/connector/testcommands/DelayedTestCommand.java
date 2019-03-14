@@ -25,7 +25,7 @@ public class DelayedTestCommand implements ICommand
     }
 
     @Override
-    public CacheKey cacheKey()
+    public CacheKey generateCacheKey()
     {
         return CacheKey.valueOf(commandDuration.toString());
     }
