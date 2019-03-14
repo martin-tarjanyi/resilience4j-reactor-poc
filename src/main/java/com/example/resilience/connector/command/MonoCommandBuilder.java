@@ -111,7 +111,7 @@ public final class MonoCommandBuilder<T>
 
         return mono.map(this::deserialize)
                    .onErrorResume(throwable -> Mono.just(Result.ofError(throwable)))
-                   .transform(doWithContext(this::log))
+                   .<Result<T>>transform(doWithContext(this::log))
                    .elapsed()
                    .doOnNext(this::logDuration)
                    .map(Tuple2::getT2);
