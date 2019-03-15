@@ -124,7 +124,12 @@ public final class MonoCommandBuilder<T>
             return;
         }
 
-        LogContext logContext = context.<LogContext>getOrEmpty(LogContext.class).orElse(LogContext.create());
+        if (!context.hasKey(LogContext.class))
+        {
+            return;
+        }
+
+        LogContext logContext = context.get(LogContext.class);
 
         logContext.add(result);
 
