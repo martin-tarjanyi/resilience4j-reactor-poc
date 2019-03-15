@@ -4,5 +4,6 @@ jdk:
 branches:
   only:
   - master
+script: mvn verify
 after_success:
   - mvn coveralls:report
